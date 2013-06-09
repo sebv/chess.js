@@ -32,7 +32,7 @@ suite("Perft", function() {
     chess.load(perft.fen);
 
     test(perft.fen, function() {
-      var nodes = chess.perft(perft.depth);
+      var nodes = chess._perft(perft.depth);
       assert(nodes == perft.nodes);
     });
 

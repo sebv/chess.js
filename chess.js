@@ -1574,7 +1574,7 @@ Chess.prototype._make_pretty = function(ugly_move) {
  * DEBUGGING UTILITIES
  ****************************************************************************/
 
-Chess.prototype.perft = function(depth) {
+Chess.prototype._perft = function(depth) {
   var moves = this._generate_moves({legal: false});
   var nodes = 0;
   var color = this._pos().turn;
@@ -1583,7 +1583,7 @@ Chess.prototype.perft = function(depth) {
     this._make_move(moves[i]);
     if (!this._king_attacked(color)) {
       if (depth - 1 > 0) {
-        var child_nodes = this.perft(depth - 1);
+        var child_nodes = this._perft(depth - 1);
         nodes += child_nodes;
       } else {
         nodes++;
