@@ -277,25 +277,25 @@ suite("Get/Put/Remove", function() {
   var chess = new Chess();
   var passed = true;
   var positions = [
-    {pieces: {a7: {type: chess.PAWN, color: chess.WHITE},
-              b7: {type: chess.PAWN, color: chess.BLACK},
-              c7: {type: chess.KNIGHT, color: chess.WHITE},
-              d7: {type: chess.KNIGHT, color: chess.BLACK},
-              e7: {type: chess.BISHOP, color: chess.WHITE},
-              f7: {type: chess.BISHOP, color: chess.BLACK},
-              g7: {type: chess.ROOK, color: chess.WHITE},
-              h7: {type: chess.ROOK, color: chess.BLACK},
-              a6: {type: chess.QUEEN, color: chess.WHITE},
-              b6: {type: chess.QUEEN, color: chess.BLACK},
-              a4: {type: chess.KING, color: chess.WHITE},
-              h4: {type: chess.KING, color: chess.BLACK}},
+    {pieces: {a7: {type: Chess.PAWN, color: Chess.WHITE},
+              b7: {type: Chess.PAWN, color: Chess.BLACK},
+              c7: {type: Chess.KNIGHT, color: Chess.WHITE},
+              d7: {type: Chess.KNIGHT, color: Chess.BLACK},
+              e7: {type: Chess.BISHOP, color: Chess.WHITE},
+              f7: {type: Chess.BISHOP, color: Chess.BLACK},
+              g7: {type: Chess.ROOK, color: Chess.WHITE},
+              h7: {type: Chess.ROOK, color: Chess.BLACK},
+              a6: {type: Chess.QUEEN, color: Chess.WHITE},
+              b6: {type: Chess.QUEEN, color: Chess.BLACK},
+              a4: {type: Chess.KING, color: Chess.WHITE},
+              h4: {type: Chess.KING, color: Chess.BLACK}},
      should_pass: true},
 
     {pieces: {a7: {type: 'z', color: chess.WHTIE}}, // bad piece
      should_pass: false},
 
     {pieces: {j4: {type: chess.PAWN, color: chess.WHTIE}}, // bad square
-     should_pass: false},
+     should_pass: false}
   ];
 
   positions.forEach(function(position) {
@@ -313,8 +313,8 @@ suite("Get/Put/Remove", function() {
       /* iterate over every square to make sure get returns the proper
        * piece values/color
        */
-      for (var j = 0; j < chess.SQUARES.length; j++) {
-        var square = chess.SQUARES[j];
+      for (var j = 0; j < Chess.SQUARES.length; j++) {
+        var square = Chess.SQUARES[j];
         if (!(square in position.pieces)) {
           if (chess.get(square)) {
             passed = false;
@@ -333,8 +333,8 @@ suite("Get/Put/Remove", function() {
 
       if (passed) {
         /* remove the pieces */
-        for (var j = 0; j < chess.SQUARES.length; j++) {
-          var square = chess.SQUARES[j];
+        for (var j = 0; j < Chess.SQUARES.length; j++) {
+          var square = Chess.SQUARES[j];
           var piece = chess.remove(square);
           if ((!(square in position.pieces)) && piece) {
             passed = false;
@@ -397,7 +397,7 @@ suite("FEN", function() {
 });
 
 
-suite("PGN", function() {
+suite("APGN", function() {
 
   var passed = true;
   var error_message;
@@ -453,9 +453,9 @@ suite("PGN", function() {
           break;
         }
       }
-
       chess.header(position.header);
       var pgn = chess.pgn({max_width:position.max_width, newline_char:position.newline_char});
+      console.log(pgn);
       var fen = chess.fen();
       passed = pgn === position.pgn && fen === position.fen;
       assert(passed && error_message.length == 0);

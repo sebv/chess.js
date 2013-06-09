@@ -817,8 +817,8 @@ Chess.prototype.load_pgn = function(pgn, options) {
   return true;
 };
 
-Chess.prototype.header = function() {
-  this.set_header(arguments);
+Chess.prototype.header = function(args) {
+  this.set_header(args);
 };
 
 Chess.prototype.ascii = function() {
@@ -931,7 +931,7 @@ Chess.prototype.put = function(piece, square) {
   }
 
   /* check for piece */
-  if (SYMBOLS.indexOf(piece.type.toLowerCase()) === -1) {
+  if ((!piece.type)||(SYMBOLS.indexOf(piece.type.toLowerCase()) === -1)) {
     return false;
   }
 
@@ -1051,7 +1051,7 @@ Chess.prototype.generate_fen = function() {
   return [fen, pos.turn, cflags, epflags, pos.half_moves, pos.move_number].join(' ');
 };
 
-Chess.prototype._set_header = function(args) {
+Chess.prototype.set_header = function(args) {
   for (var i = 0; i < args.length; i += 2) {
     if (typeof args[i] === 'string' &&
         typeof args[i + 1] === 'string') {
