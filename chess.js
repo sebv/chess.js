@@ -291,7 +291,7 @@ Chess.prototype.load = function(fen) {
   pos.half_moves = parseInt(tokens[4], 10);
   pos.move_number = parseInt(tokens[5], 10);
 
-  this.update_setup(this.generate_fen());
+  this._update_setup(this._generate_fen());
 
   return true;
 };
@@ -307,7 +307,7 @@ Chess.prototype.moves = function(options) {
    * unnecessary move keys resulting from a verbose call.
    */
 
-  var ugly_moves = this.generate_moves(options);
+  var ugly_moves = this._generate_moves(options);
   var moves = [];
 
   for (var i = 0, len = ugly_moves.length; i < len; i++) {
@@ -317,9 +317,9 @@ Chess.prototype.moves = function(options) {
      */
     if (typeof options !== 'undefined' && 'verbose' in options &&
         options.verbose) {
-      moves.push(this.make_pretty(ugly_moves[i]));
+      moves.push(this._make_pretty(ugly_moves[i]));
     } else {
-      moves.push(this.move_to_san(ugly_moves[i]));
+      moves.push(this._move_to_san(ugly_moves[i]));
     }
   }
 
@@ -327,15 +327,15 @@ Chess.prototype.moves = function(options) {
 };
 
 Chess.prototype.in_check = function() {
-  return this.king_attacked(this.pos().turn);
+  return this._king_attacked(this.pos().turn);
 };
 
 Chess.prototype.in_checkmate = function() {
-  return this.in_check() && this.generate_moves().length === 0;
+  return this.in_check() && this._generate_moves().length === 0;
 };
 
 Chess.prototype.in_stalemate = function() {
-  return !this.in_check() && this.generate_moves().length === 0;
+  return !this.in_check() && this._generate_moves().length === 0;
 };
 
 Chess.prototype.in_draw = function() {
@@ -389,7 +389,7 @@ Chess.prototype.insufficient_material = function() {
 Chess.prototype.in_threefold_repetition = function() {
   /* TODO: while this function is fine for casual use, a better
    * implementation would use a Zobrist key (instead of FEN). the
-   * Zobrist key would be maintained in the make_move/undo_move functions,
+   * Zobrist key would be maintained in the _make_move/_undo_move functions,
    * avoiding the costly that we do below.
    */
   var moves = [];
@@ -397,7 +397,7 @@ Chess.prototype.in_threefold_repetition = function() {
   var repetition = false;
 
   while (true) {
-    var move = this.undo_move();
+    var move = this._undo_move();
     if (!move) break;
     moves.push(move);
   }
@@ -405,7 +405,7 @@ Chess.prototype.in_threefold_repetition = function() {
   while (true) {
     /* remove the last two fields in the FEN string, they're not needed
      * when checking for draw by rep */
-    var fen = this.generate_fen().split(' ').slice(0,4).join(' ');
+    var fen = this._generate_fen().split(' ').slice(0,4).join(' ');
 
     /* has the position occurred three or move times */
     positions[fen] = (fen in positions) ? positions[fen] + 1 : 1;
@@ -416,7 +416,7 @@ Chess.prototype.in_threefold_repetition = function() {
     if (!moves.length) {
       break;
     }
-    this.make_move(moves.pop());
+    this._make_move(moves.pop());
   }
 
   return repetition;
@@ -513,7 +513,7 @@ Chess.prototype.validate_fen = function(fen) {
 };
 
 Chess.prototype.fen = function() {
-  return this.generate_fen(arguments);
+  return this._generate_fen(arguments);
 };
 
 Chess.prototype.pgn = function(options) {
@@ -547,7 +547,7 @@ Chess.prototype.pgn = function(options) {
   /* pop all of history onto reversed_history */
   var reversed_history = [];
   while (pos.history.length > 0) {
-    reversed_history.push(this.undo_move());
+    reversed_history.push(this._undo_move());
   }
 
   var moves = [];
@@ -571,8 +571,8 @@ Chess.prototype.pgn = function(options) {
       pgn_move_number++;
     }
 
-    move_string = move_string + ' ' + this.move_to_san(move);
-    this.make_move(move);
+    move_string = move_string + ' ' + this._move_to_san(move);
+    this._make_move(move);
   }
 
   /* are there any other leftover moves? */
@@ -706,7 +706,7 @@ Chess.prototype.load_pgn = function(pgn, options) {
       }
     }
     if (from >=0 && to >=0 && flags) {
-      return this.build_move(pos.board, from, to, flags, promotion);
+      return this._build_move(pos.board, from, to, flags, promotion);
     } else if (move.length > 0) {
       /* alert(move); // error in PGN, or in parsing. */
     }
@@ -766,7 +766,7 @@ Chess.prototype.load_pgn = function(pgn, options) {
   /* parse PGN header */
   var headers = parse_pgn_header(header_string, options);
   for (var key in headers) {
-    this.set_header([key, headers[key]]);
+    this._set_header([key, headers[key]]);
   }
 
   /* delete header to get the moves */
@@ -795,7 +795,7 @@ Chess.prototype.load_pgn = function(pgn, options) {
     if (move == null) {
       return false;
     } else {
-      this.make_move(move);
+      this._make_move(move);
     }
   }
 
@@ -803,7 +803,7 @@ Chess.prototype.load_pgn = function(pgn, options) {
   move = moves[moves.length - 1];
   if (POSSIBLE_RESULTS.indexOf(move) > -1) {
     if (has_keys(pos.header) && typeof pos.header.Result === 'undefined') {
-      this.set_header(['Result', move]);
+      this._set_header(['Result', move]);
     }
   }
   else {
@@ -811,14 +811,14 @@ Chess.prototype.load_pgn = function(pgn, options) {
     if (move == null) {
       return false;
     } else {
-      this.make_move(move);
+      this._make_move(move);
     }
   }
   return true;
 };
 
 Chess.prototype.header = function(args) {
-  this.set_header(args);
+  this._set_header(args);
 };
 
 Chess.prototype.ascii = function() {
@@ -867,12 +867,12 @@ Chess.prototype.move = function(move) {
    *      })
    */
   var move_obj = null;
-  var moves = this.generate_moves();
+  var moves = this._generate_moves();
 
   if (typeof move === 'string') {
     /* convert the move string to a move object */
     for (var i = 0, len = moves.length; i < len; i++) {
-      if (move === this.move_to_san(moves[i])) {
+      if (move === this._move_to_san(moves[i])) {
         move_obj = moves[i];
         break;
       }
@@ -898,16 +898,16 @@ Chess.prototype.move = function(move) {
   /* need to make a copy of move because we can't generate SAN after the
    * move is made
    */
-  var pretty_move = this.make_pretty(move_obj);
+  var pretty_move = this._make_pretty(move_obj);
 
-  this.make_move(move_obj);
+  this._make_move(move_obj);
 
   return pretty_move;
 };
 
 Chess.prototype.undo = function() {
-  var move = this.undo_move();
-  return (move) ? this.make_pretty(move) : null;
+  var move = this._undo_move();
+  return (move) ? this._make_pretty(move) : null;
 };
 
 Chess.prototype.clear = function() {
@@ -921,7 +921,7 @@ Chess.prototype.clear = function() {
   pos.move_number = 1;
   pos.history = [];
   pos.header = {};
-  this.update_setup(this.generate_fen());
+  this._update_setup(this._generate_fen());
 };
 
 Chess.prototype.put = function(piece, square) {
@@ -946,7 +946,7 @@ Chess.prototype.put = function(piece, square) {
     this.pos().kings[piece.color] = sq;
   }
 
-  this.update_setup(this.generate_fen());
+  this._update_setup(this._generate_fen());
 
   return true;
 };
@@ -963,7 +963,7 @@ Chess.prototype.remove = function(square) {
     this.pos().kings[piece.color] = EMPTY;
   }
 
-  this.update_setup(this.generate_fen());
+  this._update_setup(this._generate_fen());
 
   return piece;
 };
@@ -985,27 +985,27 @@ Chess.prototype.history = function(options) {
                  options.verbose);
 
   while (pos.history.length > 0) {
-    reversed_history.push(this.undo_move());
+    reversed_history.push(this._undo_move());
   }
 
   while (reversed_history.length > 0) {
     var move = reversed_history.pop();
     if (verbose) {
-      move_history.push(this.make_pretty(move));
+      move_history.push(this._make_pretty(move));
     } else {
-      move_history.push(this.move_to_san(move));
+      move_history.push(this._move_to_san(move));
     }
-    this.make_move(move);
+    this._make_move(move);
   }
 
   return move_history;
 };
 
 /***************************************************************************
-* PRIVATE METHODS
+* NON PUBLIC METHODS
 **************************************************************************/
 
-Chess.prototype.generate_fen = function() {
+Chess.prototype._generate_fen = function() {
   var empty = 0;
   var fen = '';
   var pos = this.pos();
@@ -1051,7 +1051,7 @@ Chess.prototype.generate_fen = function() {
   return [fen, pos.turn, cflags, epflags, pos.half_moves, pos.move_number].join(' ');
 };
 
-Chess.prototype.set_header = function(args) {
+Chess.prototype._set_header = function(args) {
   for (var i = 0; i < args.length; i += 2) {
     if (typeof args[i] === 'string' &&
         typeof args[i + 1] === 'string') {
@@ -1067,7 +1067,7 @@ Chess.prototype.set_header = function(args) {
  * the setup is only updated if history.length is zero, ie moves haven't been
  * made.
  */
-Chess.prototype.update_setup = function(fen) {
+Chess.prototype._update_setup = function(fen) {
   var pos = this.pos();
   if (pos.history.length > 0) return;
   if (fen !== DEFAULT_POSITION) {
@@ -1079,7 +1079,7 @@ Chess.prototype.update_setup = function(fen) {
   }
 };
 
-Chess.prototype.build_move = function(board, from, to, flags, promotion) {
+Chess.prototype._build_move = function(board, from, to, flags, promotion) {
   var move = {
     color: this.pos().turn,
     from: from,
@@ -1101,17 +1101,17 @@ Chess.prototype.build_move = function(board, from, to, flags, promotion) {
   return move;
 };
 
-Chess.prototype.generate_moves = function(options) {
+Chess.prototype._generate_moves = function(options) {
   this.add_move = function(board, moves, from, to, flags) {
     /* if pawn promotion */
     if (board[from].type === PAWN &&
        (rank(to) === RANK_8 || rank(to) === RANK_1)) {
         var pieces = [QUEEN, ROOK, BISHOP, KNIGHT];
         for (var i = 0, len = pieces.length; i < len; i++) {
-          moves.push(this.build_move(board, from, to, flags, pieces[i]));
+          moves.push(this._build_move(board, from, to, flags, pieces[i]));
         }
     } else {
-     moves.push(this.build_move(board, from, to, flags));
+     moves.push(this._build_move(board, from, to, flags));
     }
   };
 
@@ -1209,9 +1209,9 @@ Chess.prototype.generate_moves = function(options) {
 
       if (pos.board[castling_from + 1] == null &&
           pos.board[castling_to]       == null &&
-          !this.attacked(them, pos.kings[us]) &&
-          !this.attacked(them, castling_from + 1) &&
-          !this.attacked(them, castling_to)) {
+          !this._attacked(them, pos.kings[us]) &&
+          !this._attacked(them, castling_from + 1) &&
+          !this._attacked(them, castling_to)) {
         this.add_move(pos.board, moves, pos.kings[us] , castling_to,
                  BITS.KSIDE_CASTLE);
       }
@@ -1225,9 +1225,9 @@ Chess.prototype.generate_moves = function(options) {
       if (pos.board[castling_from - 1] == null &&
           pos.board[castling_from - 2] == null &&
           pos.board[castling_from - 3] == null &&
-          !this.attacked(them, pos.kings[us]) &&
-          !this.attacked(them, castling_from - 1) &&
-          !this.attacked(them, castling_to)) {
+          !this._attacked(them, pos.kings[us]) &&
+          !this._attacked(them, castling_from - 1) &&
+          !this._attacked(them, castling_to)) {
         this.add_move(pos.board, moves, pos.kings[us], castling_to,
                  BITS.QSIDE_CASTLE);
       }
@@ -1244,11 +1244,11 @@ Chess.prototype.generate_moves = function(options) {
   /* filter out illegal moves */
   var legal_moves = [];
   for (var i = 0, len = moves.length; i < len; i++) {
-    this.make_move(moves[i]);
-    if (!this.king_attacked(us)) {
+    this._make_move(moves[i]);
+    if (!this._king_attacked(us)) {
       legal_moves.push(moves[i]);
     }
-    this.undo_move();
+    this._undo_move();
   }
 
   return legal_moves;
@@ -1257,7 +1257,7 @@ Chess.prototype.generate_moves = function(options) {
 /* convert a move from 0x88 coordinates to Standard Algebraic Notation
  * (SAN)
  */
-Chess.prototype.move_to_san = function(move) {
+Chess.prototype._move_to_san = function(move) {
   var output = '';
 
   if (move.flags & BITS.KSIDE_CASTLE) {
@@ -1265,7 +1265,7 @@ Chess.prototype.move_to_san = function(move) {
   } else if (move.flags & BITS.QSIDE_CASTLE) {
     output = 'O-O-O';
   } else {
-    var disambiguator = this.get_disambiguator(move);
+    var disambiguator = this._get_disambiguator(move);
 
     if (move.piece !== PAWN) {
       output += move.piece.toUpperCase() + disambiguator;
@@ -1285,7 +1285,7 @@ Chess.prototype.move_to_san = function(move) {
     }
   }
 
-  this.make_move(move);
+  this._make_move(move);
   if (this.in_check()) {
     if (this.in_checkmate()) {
       output += '#';
@@ -1293,12 +1293,12 @@ Chess.prototype.move_to_san = function(move) {
       output += '+';
     }
   }
-  this.undo_move();
+  this._undo_move();
 
   return output;
 };
 
-Chess.prototype.attacked = function(color, square) {
+Chess.prototype._attacked = function(color, square) {
   var board = this.pos().board;
   for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
     /* did we run off the end of the board */
@@ -1340,13 +1340,13 @@ Chess.prototype.attacked = function(color, square) {
   return false;
 };
 
-Chess.prototype.king_attacked = function(color) {
-  return this.attacked(swap_color(color), this.pos().kings[color]);
+Chess.prototype._king_attacked = function(color) {
+  return this._attacked(swap_color(color), this.pos().kings[color]);
 };
 
 
 
-Chess.prototype.push = function(move) {
+Chess.prototype._push = function(move) {
   var pos = this.pos();
   pos.history.push({
     move: move,
@@ -1359,11 +1359,11 @@ Chess.prototype.push = function(move) {
   });
 };
 
-Chess.prototype.make_move = function(move) {
+Chess.prototype._make_move = function(move) {
   var pos = this.pos();
   var us = pos.turn;
   var them = swap_color(us);
-  this.push(move);
+  this._push(move);
 
   pos.board[move.to] = pos.board[move.from];
   pos.board[move.from] = null;
@@ -1451,7 +1451,7 @@ Chess.prototype.make_move = function(move) {
   pos.turn = swap_color(pos.turn);
 };
 
-Chess.prototype.undo_move = function() {
+Chess.prototype._undo_move = function() {
   var pos = this.pos();
   var old = pos.history.pop();
   if (old == null) { return null; }
@@ -1502,8 +1502,8 @@ Chess.prototype.undo_move = function() {
 };
 
 /* this function is used to uniquely identify ambiguous moves */
-Chess.prototype.get_disambiguator = function(move) {
-  var moves = this.generate_moves();
+Chess.prototype._get_disambiguator = function(move) {
+  var moves = this._generate_moves();
 
   var from = move.from;
   var to = move.to;
@@ -1556,14 +1556,10 @@ Chess.prototype.get_disambiguator = function(move) {
   return '';
 };
 
-/*****************************************************************************
- * UTILITY FUNCTIONS
- ****************************************************************************/
-
 /* pretty = external move object */
-Chess.prototype.make_pretty = function(ugly_move) {
+Chess.prototype._make_pretty = function(ugly_move) {
   var move = clone(ugly_move);
-  move.san = this.move_to_san(move);
+  move.san = this._move_to_san(move);
   move.to = algebraic(move.to);
   move.from = algebraic(move.from);
 
@@ -1584,13 +1580,13 @@ Chess.prototype.make_pretty = function(ugly_move) {
  ****************************************************************************/
 
 Chess.prototype.perft = function(depth) {
-  var moves = this.generate_moves({legal: false});
+  var moves = this._generate_moves({legal: false});
   var nodes = 0;
   var color = this.pos().turn;
 
   for (var i = 0, len = moves.length; i < len; i++) {
-    this.make_move(moves[i]);
-    if (!this.king_attacked(color)) {
+    this._make_move(moves[i]);
+    if (!this._king_attacked(color)) {
       if (depth - 1 > 0) {
         var child_nodes = this.perft(depth - 1);
         nodes += child_nodes;
@@ -1598,7 +1594,7 @@ Chess.prototype.perft = function(depth) {
         nodes++;
       }
     }
-    this.undo_move();
+    this._undo_move();
   }
 
   return nodes;
