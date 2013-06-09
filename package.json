@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "chai": "*"
+    "chai": "*",
+    "uglify-js": "*"
   }
 }
