@@ -10,7 +10,7 @@
   "globals": {
   },
   "immed": true,
-  "indent": false,
+  "indent": 2,
   "latedef": false,
   "newcap": true,
   "noarg": true,
