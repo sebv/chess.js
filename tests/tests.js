@@ -1,4 +1,9 @@
-if (typeof require != "undefined") {
+'use strict';
+
+/* jshint quotmark: false */
+/* global test, suite*/
+
+if (typeof require !== "undefined") {
   var chai = require('chai');
   var Chess = require('../chess').Chess;
 }
@@ -10,7 +15,7 @@ if (!Array.prototype.forEach) {
     for(var i = 0, len = this.length; i < len; ++i) {
       fn.call(scope, this[i], i, this);
     }
-  }
+  };
 }
 
 
@@ -33,7 +38,7 @@ suite("Perft", function() {
 
     test(perft.fen, function() {
       var nodes = chess._perft(perft.depth);
-      assert(nodes == perft.nodes);
+      assert(nodes === perft.nodes);
     });
 
   });
@@ -77,14 +82,14 @@ suite("Single Square Move Generation", function() {
     test(position.fen + ' ' + position.square, function() {
 
       var moves = chess.moves({square: position.square, verbose: position.verbose});
-      var passed = position.moves.length == moves.length;
+      var passed = position.moves.length === moves.length;
 
       for (var j = 0; j < moves.length; j++) {
         if (!position.verbose) {
-          passed = passed && moves[j] == position.moves[j];
+          passed = passed && moves[j] === position.moves[j];
         } else {
           for (var k in moves[j]) {
-            passed = passed && moves[j][k] == position.moves[j][k];
+            passed = passed && moves[j][k] === position.moves[j][k];
           }
         }
       }
@@ -133,7 +138,7 @@ suite("Stalemate", function() {
     chess.load(stalemate);
 
     test(stalemate, function() {
-      assert(chess.in_stalemate())
+      assert(chess.in_stalemate());
     });
 
   });
@@ -254,11 +259,11 @@ suite("Algebraic Notation", function() {
 
     test(position.fen, function() {
       var moves = chess.moves();
-      if (moves.length != position.moves.length) {
+      if (moves.length !== position.moves.length) {
         passed = false;
       } else {
         for (var j = 0; j < moves.length; j++) {
-          if (position.moves.indexOf(moves[j]) == -1) {
+          if (position.moves.indexOf(moves[j]) === -1) {
             passed = false;
             break;
           }
@@ -307,9 +312,8 @@ suite("Get/Put/Remove", function() {
 
       /* places the pieces */
       for (var square in position.pieces) {
-        passed &= chess.put(position.pieces[square], square);
+        passed = passed && chess.put(position.pieces[square], square);
       }
-
       /* iterate over every square to make sure get returns the proper
        * piece values/color
        */
@@ -323,8 +327,8 @@ suite("Get/Put/Remove", function() {
         } else {
           var piece = chess.get(square);
           if (!(piece &&
-              piece.type == position.pieces[square].type &&
-              piece.color == position.pieces[square].color)) {
+              piece.type === position.pieces[square].type &&
+              piece.color === position.pieces[square].color)) {
             passed = false;
             break;
           }
@@ -342,8 +346,8 @@ suite("Get/Put/Remove", function() {
           }
 
           if (piece &&
-             (position.pieces[square].type != piece.type ||
-              position.pieces[square].color != piece.color)) {
+             (position.pieces[square].type !== piece.type ||
+              position.pieces[square].color !== piece.color)) {
             passed = false;
             break;
           }
@@ -351,12 +355,12 @@ suite("Get/Put/Remove", function() {
       }
 
       /* finally, check for an empty board */
-      passed = passed && (chess.fen() == '8/8/8/8/8/8/8/8 w - - 0 1');
+      passed = passed && (chess.fen() === '8/8/8/8/8/8/8/8 w - - 0 1');
 
       /* some tests should fail, so make sure we're supposed to pass/fail each
        * test
        */
-      passed = (passed == position.should_pass);
+      passed = (passed === position.should_pass);
 
       assert(passed);
     });
@@ -389,7 +393,7 @@ suite("FEN", function() {
 
     test(position.fen + ' (' + position.should_pass + ')', function() {
       chess.load(position.fen);
-      assert(chess.fen() == position.fen == position.should_pass);
+      assert(chess.fen() === position.fen === position.should_pass);
     });
 
   });
@@ -397,7 +401,7 @@ suite("FEN", function() {
 });
 
 
-suite("APGN", function() {
+suite("PGN", function() {
 
   var passed = true;
   var error_message;
@@ -439,7 +443,7 @@ suite("APGN", function() {
      pgn: '[SetUp "r1bqk1nr/pppp1ppp/2n5/4p3/1bB1P3/2P2N2/P2P1PPP/RNBQK2R b KQkq - 0 1"]\n[FEN "1"]\n\n1. ... Ba5 2. O-O d6\n3. d4',
      starting_position: 'r1bqk1nr/pppp1ppp/2n5/4p3/1bB1P3/2P2N2/P2P1PPP/RNBQK2R b KQkq - 0 1',
      fen: 'r1bqk1nr/ppp2ppp/2np4/b3p3/2BPP3/2P2N2/P4PPP/RNBQ1RK1 b kq d3 0 3'}
-    ];
+  ];
 
   positions.forEach(function(position, i) {
 
@@ -455,10 +459,9 @@ suite("APGN", function() {
       }
       chess.header(position.header);
       var pgn = chess.pgn({max_width:position.max_width, newline_char:position.newline_char});
-      console.log(pgn);
       var fen = chess.fen();
       passed = pgn === position.pgn && fen === position.fen;
-      assert(passed && error_message.length == 0);
+      assert(passed && error_message.length === 0);
     });
 
   });
@@ -470,29 +473,29 @@ suite("Load PGN", function() {
 
   var chess = new Chess();
   var tests = [
-     {pgn: [
-       '[Event "Reykjavik WCh"]',
-       '[Site "Reykjavik WCh"]',
-       '[Date "1972.01.07"]',
-       '[EventDate "?"]',
-       '[Round "6"]',
-       '[Result "1-0"]',
-       '[White "Robert James Fischer"]',
-       '[Black "Boris Spassky"]',
-       '[ECO "D59"]',
-       '[WhiteElo "?"]',
-       '[BlackElo "?"]',
-       '[PlyCount "81"]',
-       '',
-       '1. c4 e6 2. Nf3 d5 3. d4 Nf6 4. Nc3 Be7 5. Bg5 O-O 6. e3 h6',
-       '7. Bh4 b6 8. cxd5 Nxd5 9. Bxe7 Qxe7 10. Nxd5 exd5 11. Rc1 Be6',
-       '12. Qa4 c5 13. Qa3 Rc8 14. Bb5 a6 15. dxc5 bxc5 16. O-O Ra7',
-       '17. Be2 Nd7 18. Nd4 Qf8 19. Nxe6 fxe6 20. e4 d4 21. f4 Qe7',
-       '22. e5 Rb8 23. Bc4 Kh8 24. Qh3 Nf8 25. b3 a5 26. f5 exf5',
-       '27. Rxf5 Nh7 28. Rcf1 Qd8 29. Qg3 Re7 30. h4 Rbb7 31. e6 Rbc7',
-       '32. Qe5 Qe8 33. a4 Qd8 34. R1f2 Qe8 35. R2f3 Qd8 36. Bd3 Qe8',
-       '37. Qe4 Nf6 38. Rxf6 gxf6 39. Rxf6 Kg8 40. Bc4 Kh8 41. Qf4 1-0']
-      },
+    {pgn: [
+      '[Event "Reykjavik WCh"]',
+      '[Site "Reykjavik WCh"]',
+      '[Date "1972.01.07"]',
+      '[EventDate "?"]',
+      '[Round "6"]',
+      '[Result "1-0"]',
+      '[White "Robert James Fischer"]',
+      '[Black "Boris Spassky"]',
+      '[ECO "D59"]',
+      '[WhiteElo "?"]',
+      '[BlackElo "?"]',
+      '[PlyCount "81"]',
+      '',
+      '1. c4 e6 2. Nf3 d5 3. d4 Nf6 4. Nc3 Be7 5. Bg5 O-O 6. e3 h6',
+      '7. Bh4 b6 8. cxd5 Nxd5 9. Bxe7 Qxe7 10. Nxd5 exd5 11. Rc1 Be6',
+      '12. Qa4 c5 13. Qa3 Rc8 14. Bb5 a6 15. dxc5 bxc5 16. O-O Ra7',
+      '17. Be2 Nd7 18. Nd4 Qf8 19. Nxe6 fxe6 20. e4 d4 21. f4 Qe7',
+      '22. e5 Rb8 23. Bc4 Kh8 24. Qh3 Nf8 25. b3 a5 26. f5 exf5',
+      '27. Rxf5 Nh7 28. Rcf1 Qd8 29. Qg3 Re7 30. h4 Rbb7 31. e6 Rbc7',
+      '32. Qe5 Qe8 33. a4 Qd8 34. R1f2 Qe8 35. R2f3 Qd8 36. Bd3 Qe8',
+      '37. Qe4 Nf6 38. Rxf6 gxf6 39. Rxf6 Kg8 40. Bc4 Kh8 41. Qf4 1-0'
+    ]},
     {fen: '1n1Rkb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2K5 b k - 1 17',
      pgn: [
       '[Event "Paris"]',
@@ -514,13 +517,15 @@ suite("Load PGN", function() {
       'here. He can\'t develop the [Queen\'s] knight because the pawn',
       'is hanging, the bishop is blocked because of the',
       'Queen.--Fischer} b5 10.Nxb5 cxb5 11.Bxb5+ Nbd7 12.O-O-O Rd8',
-      '13.Rxd7 Rxd7 14.Rd1 Qe6 15.Bxd7+ Nxd7 16.Qb8+ Nxb8 17.Rd8# 1-0']},
+      '13.Rxd7 Rxd7 14.Rd1 Qe6 15.Bxd7+ Nxd7 16.Qb8+ Nxb8 17.Rd8# 1-0'
+    ]},
     {pgn: [
       '1. e4 e5 2. f4 exf4 3. Nf3 g5 4. h4 g4 5. Ne5 Nf6 6. Nxg4 Nxe4',
       '7. d3 Ng3 8. Bxf4 Nxh1 9. Qe2+ Qe7 10. Nf6+ Kd8 11. Bxc7+ Kxc7',
       '12. Nd5+ Kd8 13. Nxe7 Bxe7 14. Qg4 d6 15. Qf4 Rg8 16. Qxf7 Bxh4+',
       '17. Kd2 Re8 18. Na3 Na6 19. Qh5 Bf6 20. Qxh1 Bxb2 21. Qh4+ Kd7',
-      '22. Rb1 Bxa3 23. Qa4+']},
+      '22. Rb1 Bxa3 23. Qa4+'
+    ]},
   ];
 
   var newline_chars = ['\n', '<br />', '\r\n', 'BLAH'];
@@ -538,9 +543,9 @@ suite("Load PGN", function() {
          * (instead of the reconstructed PGN [e.g. test.pgn.join(newline)])
          */
         if ('fen' in t) {
-          assert(result && chess.fen() == t.fen);
+          assert(result && chess.fen() === t.fen);
         } else {
-          assert(result && chess.pgn({ max_width: 65, newline_char: newline }) ==
+          assert(result && chess.pgn({ max_width: 65, newline_char: newline }) ===
                  t.pgn.join(newline));
         }
       });
@@ -551,7 +556,7 @@ suite("Load PGN", function() {
 
 // special case dirty file containing a mix of \n and \r\n 
   test('dirty pgn', function() {
-    var pgn = 
+    var pgn =
          '[Event "Reykjavik WCh"]\n' +
          '[Site "Reykjavik WCh"]\n' +
          '[Date "1972.01.07"]\n' +
@@ -580,8 +585,7 @@ suite("Load PGN", function() {
     var result = chess.load_pgn(pgn);
     assert(result);
 
-  });  
-
+  });
 });
 
 
@@ -617,9 +621,8 @@ suite("Make Move", function() {
     test(position.fen + ' (' + position.move + ' ' + position.legal + ')', function() {
       var result = chess.move(position.move);
       if (position.legal) {
-        assert(result
-               && chess.fen() == position.next
-               && result.captured == position.captured);
+        assert(result && chess.fen() === position.next &&
+          result.captured === position.captured);
       } else {
         assert(!result);
       }
@@ -760,9 +763,9 @@ suite("Validate FEN", function() {
 
   positions.forEach(function(position) {
 
-    test(position.fen + ' (valid: ' + (position.error_number  == 0) + ')', function() {
+    test(position.fen + ' (valid: ' + (position.error_number  === 0) + ')', function() {
       var result = chess.validate_fen(position.fen);
-      assert(result.error_number == position.error_number, result.error_number);
+      assert(result.error_number === position.error_number, result.error_number);
     });
 
   });
@@ -773,103 +776,106 @@ suite("Validate FEN", function() {
 suite("History", function() {
 
   var chess = new Chess();
-  var tests = [
-     {verbose: false,
-      fen: '4q2k/2r1r3/4PR1p/p1p5/P1Bp1Q1P/1P6/6P1/6K1 b - - 4 41',
-      moves: ['c4', 'e6', 'Nf3', 'd5', 'd4', 'Nf6', 'Nc3', 'Be7', 'Bg5', 'O-O', 'e3', 'h6',
-              'Bh4', 'b6', 'cxd5', 'Nxd5', 'Bxe7', 'Qxe7', 'Nxd5', 'exd5', 'Rc1', 'Be6',
-              'Qa4', 'c5', 'Qa3', 'Rc8', 'Bb5', 'a6', 'dxc5', 'bxc5', 'O-O', 'Ra7',
-              'Be2', 'Nd7', 'Nd4', 'Qf8', 'Nxe6', 'fxe6', 'e4', 'd4', 'f4', 'Qe7',
-              'e5', 'Rb8', 'Bc4', 'Kh8', 'Qh3', 'Nf8', 'b3', 'a5', 'f5', 'exf5',
-              'Rxf5', 'Nh7', 'Rcf1', 'Qd8', 'Qg3', 'Re7', 'h4', 'Rbb7', 'e6', 'Rbc7',
-              'Qe5', 'Qe8', 'a4', 'Qd8', 'R1f2', 'Qe8', 'R2f3', 'Qd8', 'Bd3', 'Qe8',
-              'Qe4', 'Nf6', 'Rxf6', 'gxf6', 'Rxf6', 'Kg8', 'Bc4', 'Kh8', 'Qf4']},
-     {verbose: true,
-      fen: '4q2k/2r1r3/4PR1p/p1p5/P1Bp1Q1P/1P6/6P1/6K1 b - - 4 41',
-      moves: [
-        {color: 'w', from: 'c2', to: 'c4', flags: 'b', piece: 'p', san: 'c4'},
-        {color: 'b', from: 'e7', to: 'e6', flags: 'n', piece: 'p', san: 'e6'},
-        {color: 'w', from: 'g1', to: 'f3', flags: 'n', piece: 'n', san: 'Nf3'},
-        {color: 'b', from: 'd7', to: 'd5', flags: 'b', piece: 'p', san: 'd5'},
-        {color: 'w', from: 'd2', to: 'd4', flags: 'b', piece: 'p', san: 'd4'},
-        {color: 'b', from: 'g8', to: 'f6', flags: 'n', piece: 'n', san: 'Nf6'},
-        {color: 'w', from: 'b1', to: 'c3', flags: 'n', piece: 'n', san: 'Nc3'},
-        {color: 'b', from: 'f8', to: 'e7', flags: 'n', piece: 'b', san: 'Be7'},
-        {color: 'w', from: 'c1', to: 'g5', flags: 'n', piece: 'b', san: 'Bg5'},
-        {color: 'b', from: 'e8', to: 'g8', flags: 'k', piece: 'k', san: 'O-O'},
-        {color: 'w', from: 'e2', to: 'e3', flags: 'n', piece: 'p', san: 'e3'},
-        {color: 'b', from: 'h7', to: 'h6', flags: 'n', piece: 'p', san: 'h6'},
-        {color: 'w', from: 'g5', to: 'h4', flags: 'n', piece: 'b', san: 'Bh4'},
-        {color: 'b', from: 'b7', to: 'b6', flags: 'n', piece: 'p', san: 'b6'},
-        {color: 'w', from: 'c4', to: 'd5', flags: 'c', piece: 'p', captured: 'p', san: 'cxd5'},
-        {color: 'b', from: 'f6', to: 'd5', flags: 'c', piece: 'n', captured: 'p', san: 'Nxd5'},
-        {color: 'w', from: 'h4', to: 'e7', flags: 'c', piece: 'b', captured: 'b', san: 'Bxe7'},
-        {color: 'b', from: 'd8', to: 'e7', flags: 'c', piece: 'q', captured: 'b', san: 'Qxe7'},
-        {color: 'w', from: 'c3', to: 'd5', flags: 'c', piece: 'n', captured: 'n', san: 'Nxd5'},
-        {color: 'b', from: 'e6', to: 'd5', flags: 'c', piece: 'p', captured: 'n', san: 'exd5'},
-        {color: 'w', from: 'a1', to: 'c1', flags: 'n', piece: 'r', san: 'Rc1'},
-        {color: 'b', from: 'c8', to: 'e6', flags: 'n', piece: 'b', san: 'Be6'},
-        {color: 'w', from: 'd1', to: 'a4', flags: 'n', piece: 'q', san: 'Qa4'},
-        {color: 'b', from: 'c7', to: 'c5', flags: 'b', piece: 'p', san: 'c5'},
-        {color: 'w', from: 'a4', to: 'a3', flags: 'n', piece: 'q', san: 'Qa3'},
-        {color: 'b', from: 'f8', to: 'c8', flags: 'n', piece: 'r', san: 'Rc8'},
-        {color: 'w', from: 'f1', to: 'b5', flags: 'n', piece: 'b', san: 'Bb5'},
-        {color: 'b', from: 'a7', to: 'a6', flags: 'n', piece: 'p', san: 'a6'},
-        {color: 'w', from: 'd4', to: 'c5', flags: 'c', piece: 'p', captured: 'p', san: 'dxc5'},
-        {color: 'b', from: 'b6', to: 'c5', flags: 'c', piece: 'p', captured: 'p', san: 'bxc5'},
-        {color: 'w', from: 'e1', to: 'g1', flags: 'k', piece: 'k', san: 'O-O'},
-        {color: 'b', from: 'a8', to: 'a7', flags: 'n', piece: 'r', san: 'Ra7'},
-        {color: 'w', from: 'b5', to: 'e2', flags: 'n', piece: 'b', san: 'Be2'},
-        {color: 'b', from: 'b8', to: 'd7', flags: 'n', piece: 'n', san: 'Nd7'},
-        {color: 'w', from: 'f3', to: 'd4', flags: 'n', piece: 'n', san: 'Nd4'},
-        {color: 'b', from: 'e7', to: 'f8', flags: 'n', piece: 'q', san: 'Qf8'},
-        {color: 'w', from: 'd4', to: 'e6', flags: 'c', piece: 'n', captured: 'b', san: 'Nxe6'},
-        {color: 'b', from: 'f7', to: 'e6', flags: 'c', piece: 'p', captured: 'n', san: 'fxe6'},
-        {color: 'w', from: 'e3', to: 'e4', flags: 'n', piece: 'p', san: 'e4'},
-        {color: 'b', from: 'd5', to: 'd4', flags: 'n', piece: 'p', san: 'd4'},
-        {color: 'w', from: 'f2', to: 'f4', flags: 'b', piece: 'p', san: 'f4'},
-        {color: 'b', from: 'f8', to: 'e7', flags: 'n', piece: 'q', san: 'Qe7'},
-        {color: 'w', from: 'e4', to: 'e5', flags: 'n', piece: 'p', san: 'e5'},
-        {color: 'b', from: 'c8', to: 'b8', flags: 'n', piece: 'r', san: 'Rb8'},
-        {color: 'w', from: 'e2', to: 'c4', flags: 'n', piece: 'b', san: 'Bc4'},
-        {color: 'b', from: 'g8', to: 'h8', flags: 'n', piece: 'k', san: 'Kh8'},
-        {color: 'w', from: 'a3', to: 'h3', flags: 'n', piece: 'q', san: 'Qh3'},
-        {color: 'b', from: 'd7', to: 'f8', flags: 'n', piece: 'n', san: 'Nf8'},
-        {color: 'w', from: 'b2', to: 'b3', flags: 'n', piece: 'p', san: 'b3'},
-        {color: 'b', from: 'a6', to: 'a5', flags: 'n', piece: 'p', san: 'a5'},
-        {color: 'w', from: 'f4', to: 'f5', flags: 'n', piece: 'p', san: 'f5'},
-        {color: 'b', from: 'e6', to: 'f5', flags: 'c', piece: 'p', captured: 'p', san: 'exf5'},
-        {color: 'w', from: 'f1', to: 'f5', flags: 'c', piece: 'r', captured: 'p', san: 'Rxf5'},
-        {color: 'b', from: 'f8', to: 'h7', flags: 'n', piece: 'n', san: 'Nh7'},
-        {color: 'w', from: 'c1', to: 'f1', flags: 'n', piece: 'r', san: 'Rcf1'},
-        {color: 'b', from: 'e7', to: 'd8', flags: 'n', piece: 'q', san: 'Qd8'},
-        {color: 'w', from: 'h3', to: 'g3', flags: 'n', piece: 'q', san: 'Qg3'},
-        {color: 'b', from: 'a7', to: 'e7', flags: 'n', piece: 'r', san: 'Re7'},
-        {color: 'w', from: 'h2', to: 'h4', flags: 'b', piece: 'p', san: 'h4'},
-        {color: 'b', from: 'b8', to: 'b7', flags: 'n', piece: 'r', san: 'Rbb7'},
-        {color: 'w', from: 'e5', to: 'e6', flags: 'n', piece: 'p', san: 'e6'},
-        {color: 'b', from: 'b7', to: 'c7', flags: 'n', piece: 'r', san: 'Rbc7'},
-        {color: 'w', from: 'g3', to: 'e5', flags: 'n', piece: 'q', san: 'Qe5'},
-        {color: 'b', from: 'd8', to: 'e8', flags: 'n', piece: 'q', san: 'Qe8'},
-        {color: 'w', from: 'a2', to: 'a4', flags: 'b', piece: 'p', san: 'a4'},
-        {color: 'b', from: 'e8', to: 'd8', flags: 'n', piece: 'q', san: 'Qd8'},
-        {color: 'w', from: 'f1', to: 'f2', flags: 'n', piece: 'r', san: 'R1f2'},
-        {color: 'b', from: 'd8', to: 'e8', flags: 'n', piece: 'q', san: 'Qe8'},
-        {color: 'w', from: 'f2', to: 'f3', flags: 'n', piece: 'r', san: 'R2f3'},
-        {color: 'b', from: 'e8', to: 'd8', flags: 'n', piece: 'q', san: 'Qd8'},
-        {color: 'w', from: 'c4', to: 'd3', flags: 'n', piece: 'b', san: 'Bd3'},
-        {color: 'b', from: 'd8', to: 'e8', flags: 'n', piece: 'q', san: 'Qe8'},
-        {color: 'w', from: 'e5', to: 'e4', flags: 'n', piece: 'q', san: 'Qe4'},
-        {color: 'b', from: 'h7', to: 'f6', flags: 'n', piece: 'n', san: 'Nf6'},
-        {color: 'w', from: 'f5', to: 'f6', flags: 'c', piece: 'r', captured: 'n', san: 'Rxf6'},
-        {color: 'b', from: 'g7', to: 'f6', flags: 'c', piece: 'p', captured: 'r', san: 'gxf6'},
-        {color: 'w', from: 'f3', to: 'f6', flags: 'c', piece: 'r', captured: 'p', san: 'Rxf6'},
-        {color: 'b', from: 'h8', to: 'g8', flags: 'n', piece: 'k', san: 'Kg8'},
-        {color: 'w', from: 'd3', to: 'c4', flags: 'n', piece: 'b', san: 'Bc4'},
-        {color: 'b', from: 'g8', to: 'h8', flags: 'n', piece: 'k', san: 'Kh8'},
-        {color: 'w', from: 'e4', to: 'f4', flags: 'n', piece: 'q', san: 'Qf4'}],
-      fen: '4q2k/2r1r3/4PR1p/p1p5/P1Bp1Q1P/1P6/6P1/6K1 b - - 4 41'}
-  ];
+  var tests = [{
+    verbose: false,
+    fen: '4q2k/2r1r3/4PR1p/p1p5/P1Bp1Q1P/1P6/6P1/6K1 b - - 4 41',
+    moves: [
+      'c4', 'e6', 'Nf3', 'd5', 'd4', 'Nf6', 'Nc3', 'Be7', 'Bg5', 'O-O', 'e3', 'h6',
+      'Bh4', 'b6', 'cxd5', 'Nxd5', 'Bxe7', 'Qxe7', 'Nxd5', 'exd5', 'Rc1', 'Be6',
+      'Qa4', 'c5', 'Qa3', 'Rc8', 'Bb5', 'a6', 'dxc5', 'bxc5', 'O-O', 'Ra7',
+      'Be2', 'Nd7', 'Nd4', 'Qf8', 'Nxe6', 'fxe6', 'e4', 'd4', 'f4', 'Qe7',
+      'e5', 'Rb8', 'Bc4', 'Kh8', 'Qh3', 'Nf8', 'b3', 'a5', 'f5', 'exf5',
+      'Rxf5', 'Nh7', 'Rcf1', 'Qd8', 'Qg3', 'Re7', 'h4', 'Rbb7', 'e6', 'Rbc7',
+      'Qe5', 'Qe8', 'a4', 'Qd8', 'R1f2', 'Qe8', 'R2f3', 'Qd8', 'Bd3', 'Qe8',
+      'Qe4', 'Nf6', 'Rxf6', 'gxf6', 'Rxf6', 'Kg8', 'Bc4', 'Kh8', 'Qf4'
+    ]
+  },
+  { verbose: true,
+    fen: '4q2k/2r1r3/4PR1p/p1p5/P1Bp1Q1P/1P6/6P1/6K1 b - - 4 41',
+    moves: [
+      {color: 'w', from: 'c2', to: 'c4', flags: 'b', piece: 'p', san: 'c4'},
+      {color: 'b', from: 'e7', to: 'e6', flags: 'n', piece: 'p', san: 'e6'},
+      {color: 'w', from: 'g1', to: 'f3', flags: 'n', piece: 'n', san: 'Nf3'},
+      {color: 'b', from: 'd7', to: 'd5', flags: 'b', piece: 'p', san: 'd5'},
+      {color: 'w', from: 'd2', to: 'd4', flags: 'b', piece: 'p', san: 'd4'},
+      {color: 'b', from: 'g8', to: 'f6', flags: 'n', piece: 'n', san: 'Nf6'},
+      {color: 'w', from: 'b1', to: 'c3', flags: 'n', piece: 'n', san: 'Nc3'},
+      {color: 'b', from: 'f8', to: 'e7', flags: 'n', piece: 'b', san: 'Be7'},
+      {color: 'w', from: 'c1', to: 'g5', flags: 'n', piece: 'b', san: 'Bg5'},
+      {color: 'b', from: 'e8', to: 'g8', flags: 'k', piece: 'k', san: 'O-O'},
+      {color: 'w', from: 'e2', to: 'e3', flags: 'n', piece: 'p', san: 'e3'},
+      {color: 'b', from: 'h7', to: 'h6', flags: 'n', piece: 'p', san: 'h6'},
+      {color: 'w', from: 'g5', to: 'h4', flags: 'n', piece: 'b', san: 'Bh4'},
+      {color: 'b', from: 'b7', to: 'b6', flags: 'n', piece: 'p', san: 'b6'},
+      {color: 'w', from: 'c4', to: 'd5', flags: 'c', piece: 'p', captured: 'p', san: 'cxd5'},
+      {color: 'b', from: 'f6', to: 'd5', flags: 'c', piece: 'n', captured: 'p', san: 'Nxd5'},
+      {color: 'w', from: 'h4', to: 'e7', flags: 'c', piece: 'b', captured: 'b', san: 'Bxe7'},
+      {color: 'b', from: 'd8', to: 'e7', flags: 'c', piece: 'q', captured: 'b', san: 'Qxe7'},
+      {color: 'w', from: 'c3', to: 'd5', flags: 'c', piece: 'n', captured: 'n', san: 'Nxd5'},
+      {color: 'b', from: 'e6', to: 'd5', flags: 'c', piece: 'p', captured: 'n', san: 'exd5'},
+      {color: 'w', from: 'a1', to: 'c1', flags: 'n', piece: 'r', san: 'Rc1'},
+      {color: 'b', from: 'c8', to: 'e6', flags: 'n', piece: 'b', san: 'Be6'},
+      {color: 'w', from: 'd1', to: 'a4', flags: 'n', piece: 'q', san: 'Qa4'},
+      {color: 'b', from: 'c7', to: 'c5', flags: 'b', piece: 'p', san: 'c5'},
+      {color: 'w', from: 'a4', to: 'a3', flags: 'n', piece: 'q', san: 'Qa3'},
+      {color: 'b', from: 'f8', to: 'c8', flags: 'n', piece: 'r', san: 'Rc8'},
+      {color: 'w', from: 'f1', to: 'b5', flags: 'n', piece: 'b', san: 'Bb5'},
+      {color: 'b', from: 'a7', to: 'a6', flags: 'n', piece: 'p', san: 'a6'},
+      {color: 'w', from: 'd4', to: 'c5', flags: 'c', piece: 'p', captured: 'p', san: 'dxc5'},
+      {color: 'b', from: 'b6', to: 'c5', flags: 'c', piece: 'p', captured: 'p', san: 'bxc5'},
+      {color: 'w', from: 'e1', to: 'g1', flags: 'k', piece: 'k', san: 'O-O'},
+      {color: 'b', from: 'a8', to: 'a7', flags: 'n', piece: 'r', san: 'Ra7'},
+      {color: 'w', from: 'b5', to: 'e2', flags: 'n', piece: 'b', san: 'Be2'},
+      {color: 'b', from: 'b8', to: 'd7', flags: 'n', piece: 'n', san: 'Nd7'},
+      {color: 'w', from: 'f3', to: 'd4', flags: 'n', piece: 'n', san: 'Nd4'},
+      {color: 'b', from: 'e7', to: 'f8', flags: 'n', piece: 'q', san: 'Qf8'},
+      {color: 'w', from: 'd4', to: 'e6', flags: 'c', piece: 'n', captured: 'b', san: 'Nxe6'},
+      {color: 'b', from: 'f7', to: 'e6', flags: 'c', piece: 'p', captured: 'n', san: 'fxe6'},
+      {color: 'w', from: 'e3', to: 'e4', flags: 'n', piece: 'p', san: 'e4'},
+      {color: 'b', from: 'd5', to: 'd4', flags: 'n', piece: 'p', san: 'd4'},
+      {color: 'w', from: 'f2', to: 'f4', flags: 'b', piece: 'p', san: 'f4'},
+      {color: 'b', from: 'f8', to: 'e7', flags: 'n', piece: 'q', san: 'Qe7'},
+      {color: 'w', from: 'e4', to: 'e5', flags: 'n', piece: 'p', san: 'e5'},
+      {color: 'b', from: 'c8', to: 'b8', flags: 'n', piece: 'r', san: 'Rb8'},
+      {color: 'w', from: 'e2', to: 'c4', flags: 'n', piece: 'b', san: 'Bc4'},
+      {color: 'b', from: 'g8', to: 'h8', flags: 'n', piece: 'k', san: 'Kh8'},
+      {color: 'w', from: 'a3', to: 'h3', flags: 'n', piece: 'q', san: 'Qh3'},
+      {color: 'b', from: 'd7', to: 'f8', flags: 'n', piece: 'n', san: 'Nf8'},
+      {color: 'w', from: 'b2', to: 'b3', flags: 'n', piece: 'p', san: 'b3'},
+      {color: 'b', from: 'a6', to: 'a5', flags: 'n', piece: 'p', san: 'a5'},
+      {color: 'w', from: 'f4', to: 'f5', flags: 'n', piece: 'p', san: 'f5'},
+      {color: 'b', from: 'e6', to: 'f5', flags: 'c', piece: 'p', captured: 'p', san: 'exf5'},
+      {color: 'w', from: 'f1', to: 'f5', flags: 'c', piece: 'r', captured: 'p', san: 'Rxf5'},
+      {color: 'b', from: 'f8', to: 'h7', flags: 'n', piece: 'n', san: 'Nh7'},
+      {color: 'w', from: 'c1', to: 'f1', flags: 'n', piece: 'r', san: 'Rcf1'},
+      {color: 'b', from: 'e7', to: 'd8', flags: 'n', piece: 'q', san: 'Qd8'},
+      {color: 'w', from: 'h3', to: 'g3', flags: 'n', piece: 'q', san: 'Qg3'},
+      {color: 'b', from: 'a7', to: 'e7', flags: 'n', piece: 'r', san: 'Re7'},
+      {color: 'w', from: 'h2', to: 'h4', flags: 'b', piece: 'p', san: 'h4'},
+      {color: 'b', from: 'b8', to: 'b7', flags: 'n', piece: 'r', san: 'Rbb7'},
+      {color: 'w', from: 'e5', to: 'e6', flags: 'n', piece: 'p', san: 'e6'},
+      {color: 'b', from: 'b7', to: 'c7', flags: 'n', piece: 'r', san: 'Rbc7'},
+      {color: 'w', from: 'g3', to: 'e5', flags: 'n', piece: 'q', san: 'Qe5'},
+      {color: 'b', from: 'd8', to: 'e8', flags: 'n', piece: 'q', san: 'Qe8'},
+      {color: 'w', from: 'a2', to: 'a4', flags: 'b', piece: 'p', san: 'a4'},
+      {color: 'b', from: 'e8', to: 'd8', flags: 'n', piece: 'q', san: 'Qd8'},
+      {color: 'w', from: 'f1', to: 'f2', flags: 'n', piece: 'r', san: 'R1f2'},
+      {color: 'b', from: 'd8', to: 'e8', flags: 'n', piece: 'q', san: 'Qe8'},
+      {color: 'w', from: 'f2', to: 'f3', flags: 'n', piece: 'r', san: 'R2f3'},
+      {color: 'b', from: 'e8', to: 'd8', flags: 'n', piece: 'q', san: 'Qd8'},
+      {color: 'w', from: 'c4', to: 'd3', flags: 'n', piece: 'b', san: 'Bd3'},
+      {color: 'b', from: 'd8', to: 'e8', flags: 'n', piece: 'q', san: 'Qe8'},
+      {color: 'w', from: 'e5', to: 'e4', flags: 'n', piece: 'q', san: 'Qe4'},
+      {color: 'b', from: 'h7', to: 'f6', flags: 'n', piece: 'n', san: 'Nf6'},
+      {color: 'w', from: 'f5', to: 'f6', flags: 'c', piece: 'r', captured: 'n', san: 'Rxf6'},
+      {color: 'b', from: 'g7', to: 'f6', flags: 'c', piece: 'p', captured: 'r', san: 'gxf6'},
+      {color: 'w', from: 'f3', to: 'f6', flags: 'c', piece: 'r', captured: 'p', san: 'Rxf6'},
+      {color: 'b', from: 'h8', to: 'g8', flags: 'n', piece: 'k', san: 'Kg8'},
+      {color: 'w', from: 'd3', to: 'c4', flags: 'n', piece: 'b', san: 'Bc4'},
+      {color: 'b', from: 'g8', to: 'h8', flags: 'n', piece: 'k', san: 'Kh8'},
+      {color: 'w', from: 'e4', to: 'f4', flags: 'n', piece: 'q', san: 'Qf4'}
+    ],
+  }];
 
   tests.forEach(function(t, i) {
     var passed = true;
@@ -878,24 +884,24 @@ suite("History", function() {
       chess.reset();
 
       for (var j = 0; j < t.moves.length; j++) {
-        chess.move(t.moves[j])
+        chess.move(t.moves[j]);
       }
 
       var history = chess.history({verbose: t.verbose});
-      if (t.fen != chess.fen()) {
+      if (t.fen !== chess.fen()) {
         passed = false;
-      } else if (history.length != t.moves.length) {
+      } else if (history.length !== t.moves.length) {
         passed = false;
       } else {
         for (var j = 0; j < t.moves.length; j++) {
           if (!t.verbose) {
-            if (history[j] != t.moves[j]) {
+            if (history[j] !== t.moves[j]) {
               passed = false;
               break;
             }
           } else {
             for (var key in history[j]) {
-              if (history[j][key] != t.moves[j][key]) {
+              if (history[j][key] !== t.moves[j][key]) {
                 passed = false;
                 break;
               }
@@ -914,6 +920,6 @@ suite('Regression Tests', function() {
   test('Issue #32 - castling flag reappearing', function() {
     var chess = new Chess('b3k2r/5p2/4p3/1p5p/6p1/2PR2P1/BP3qNP/6QK b k - 2 28');
     chess.move({from:'a8', to:'g2'});
-    assert(chess.fen() == '4k2r/5p2/4p3/1p5p/6p1/2PR2P1/BP3qbP/6QK w k - 0 29');
+    assert(chess.fen() === '4k2r/5p2/4p3/1p5p/6p1/2PR2P1/BP3qbP/6QK w k - 0 29');
   });
 });
