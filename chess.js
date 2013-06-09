@@ -620,101 +620,6 @@ Chess.prototype.load_pgn = function(pgn, options) {
     return str.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
   }
 
-  /* convert a move from Standard Algebraic Notation (SAN) to 0x88
-   * coordinates
-  */
-  this.move_from_san = function(move) {
-    var to, from, flags = BITS.NORMAL, promotion;
-    var parse = move.match(/^([NBKRQ])?([abcdefgh12345678][12345678]?)?(x)?([abcdefgh][12345678])(=[NBRQ])?/);
-    var pos = this._pos();
-    if (move.slice(0, 5) === 'O-O-O') {
-      from = pos.kings[pos.turn];
-      to = from - 2;
-      flags = BITS.QSIDE_CASTLE;
-    } else if (move.slice(0, 3) === 'O-O') {
-      from = pos.kings[pos.turn];
-      to = from + 2;
-      flags = BITS.KSIDE_CASTLE;
-    } else if (parse && parse[1]) {
-      // regular moves
-      var piece = parse[1].toLowerCase();
-      if (parse[3]) {
-        // capture
-        flags = BITS.CAPTURE;
-      }
-      to = SQUARES[parse[4]];
-      for (var j = 0, len = PIECE_OFFSETS[piece].length; j < len; j++) {
-        var offset = PIECE_OFFSETS[piece][j];
-        var square = to;
-
-        while (true) {
-          square += offset;
-          if (square & 0x88) break;
-
-          var b = pos.board[square];
-          if (b) {
-            if (b.color === pos.turn && b.type === piece && (!parse[2] || algebraic(square).indexOf(parse[2]) >= 0)) {
-              from = square;
-            }
-            break;
-          }
-
-          /* break, if knight or king */
-          if (piece === 'n' || piece === 'k') break;
-        }
-      }
-    } else if (parse) {
-      // pawn move
-      if (parse[3]) {
-        // capture
-        to = SQUARES[parse[4]];
-        for (var j = 2; j < 4; j++) {
-          var square = to - PAWN_OFFSETS[pos.turn][j];
-          if (square & 0x88) continue;
-
-          if (pos.board[square] != null &&
-              pos.board[square].color === pos.turn &&
-              algebraic(square)[0] === parse[2]) {
-            from = square;
-          }
-        }
-        if (pos.board[to]) {
-          flags = BITS.CAPTURE;
-        } else {
-          flags = BITS.EP_CAPTURE;
-        }
-      } else {
-        // normal move
-        to = SQUARES[move.slice(0,2)];
-        var c = to - PAWN_OFFSETS[pos.turn][0],
-            b = pos.board[c];
-        if (b && b.type === PAWN && b.color === pos.turn) {
-          from = c;
-        } else {
-          c = to - PAWN_OFFSETS[pos.turn][1];
-          b = pos.board[c];
-          if (b && b.type === PAWN && b.color === pos.turn) {
-            from = c;
-            flags = BITS.BIG_PAWN;
-          }
-        }
-      }
-      // promotion?
-      if (parse[5]) {
-        promotion = parse[5][1].toLowerCase();
-      }
-    }
-    if (from >=0 && to >=0 && flags) {
-      return this._build_move(pos.board, from, to, flags, promotion);
-    } else if (move.length > 0) {
-      /* alert(move); // error in PGN, or in parsing. */
-    }
-  };
-
-  this.get_move_obj = function(move) {
-    return this.move_from_san(trim(move));
-  };
-
   function has_keys(object) {
     var has_keys = false;
     for (var key in object) {
@@ -786,7 +691,7 @@ Chess.prototype.load_pgn = function(pgn, options) {
   var move = '';
 
   for (var half_move = 0; half_move < moves.length - 1; half_move++) {
-    move = this.get_move_obj(moves[half_move]);
+    move = this._move_from_san(trim(moves[half_move]));
 
     /* move not possible! (don't clear the board to examine to show the
      * latest valid position)
@@ -806,7 +711,7 @@ Chess.prototype.load_pgn = function(pgn, options) {
     }
   }
   else {
-    move = this.get_move_obj(move);
+    move = this._move_from_san(trim(move));
     if (move == null) {
       return false;
     } else {
@@ -1295,6 +1200,97 @@ Chess.prototype._move_to_san = function(move) {
   this._undo_move();
 
   return output;
+};
+
+/* convert a move from Standard Algebraic Notation (SAN) to 0x88
+ * coordinates
+*/
+Chess.prototype._move_from_san = function(move) {
+  var to, from, flags = BITS.NORMAL, promotion;
+  var parse = move.match(/^([NBKRQ])?([abcdefgh12345678][12345678]?)?(x)?([abcdefgh][12345678])(=[NBRQ])?/);
+  var pos = this._pos();
+  if (move.slice(0, 5) === 'O-O-O') {
+    from = pos.kings[pos.turn];
+    to = from - 2;
+    flags = BITS.QSIDE_CASTLE;
+  } else if (move.slice(0, 3) === 'O-O') {
+    from = pos.kings[pos.turn];
+    to = from + 2;
+    flags = BITS.KSIDE_CASTLE;
+  } else if (parse && parse[1]) {
+    // regular moves
+    var piece = parse[1].toLowerCase();
+    if (parse[3]) {
+      // capture
+      flags = BITS.CAPTURE;
+    }
+    to = SQUARES[parse[4]];
+    for (var j = 0, len = PIECE_OFFSETS[piece].length; j < len; j++) {
+      var offset = PIECE_OFFSETS[piece][j];
+      var square = to;
+
+      while (true) {
+        square += offset;
+        if (square & 0x88) break;
+
+        var b = pos.board[square];
+        if (b) {
+          if (b.color === pos.turn && b.type === piece && (!parse[2] || algebraic(square).indexOf(parse[2]) >= 0)) {
+            from = square;
+          }
+          break;
+        }
+
+        /* break, if knight or king */
+        if (piece === 'n' || piece === 'k') break;
+      }
+    }
+  } else if (parse) {
+    // pawn move
+    if (parse[3]) {
+      // capture
+      to = SQUARES[parse[4]];
+      for (var j = 2; j < 4; j++) {
+        var square = to - PAWN_OFFSETS[pos.turn][j];
+        if (square & 0x88) continue;
+
+        if (pos.board[square] != null &&
+            pos.board[square].color === pos.turn &&
+            algebraic(square)[0] === parse[2]) {
+          from = square;
+        }
+      }
+      if (pos.board[to]) {
+        flags = BITS.CAPTURE;
+      } else {
+        flags = BITS.EP_CAPTURE;
+      }
+    } else {
+      // normal move
+      to = SQUARES[move.slice(0,2)];
+      var c = to - PAWN_OFFSETS[pos.turn][0],
+          b = pos.board[c];
+      if (b && b.type === PAWN && b.color === pos.turn) {
+        from = c;
+      } else {
+        c = to - PAWN_OFFSETS[pos.turn][1];
+        b = pos.board[c];
+        if (b && b.type === PAWN && b.color === pos.turn) {
+          from = c;
+          flags = BITS.BIG_PAWN;
+        }
+      }
+    }
+    // promotion?
+    if (parse[5]) {
+      promotion = parse[5][1].toLowerCase();
+    }
+  }
+  if (from >=0 && to >=0 && flags) {
+    return this._build_move(pos.board, from, to, flags, promotion);
+  } else if (move.length > 0) {
+    /* alert(move); // error in PGN, or in parsing. */
+  }
 };
 
 Chess.prototype._attacked = function(color, square) {
