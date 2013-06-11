@@ -196,6 +196,92 @@
     return str.replace(/^\s+|\s+$/g, '');
   }
 
+  var PgnParser = function(newLine) {
+    this.newLine = newLine;
+  };
+
+  /***************************************************************************
+   * Pgn Parser 
+   **************************************************************************/
+
+  PgnParser.prototype.parse = function(pgn, cb) {
+    function emit(evt, data) {
+      cb(evt,data);
+    }
+
+    if(!pgn)
+      throw new Error('No pgn.');
+
+    // extracting pgn sections
+    var _newLine = '\\r?\\n';
+    if(this.newLine) _newLine = this.newLine.replace(/\n/g, '\\n').
+      replace(/\r/g, '\\r').
+      replace(/\//g, '\\/');
+
+    var regexString = '^((?:\\[.*\\](?:NL))*)((?:\\{.*\\}(?:NL))?(?:NL)1\\.(?:.*(?:NL)?)*)$';
+    var regex = new RegExp(regexString.replace(/NL/g, _newLine));
+    var matches = pgn.match(regex);
+    var headersAsString,moveListAsString;
+    if(matches) {
+      headersAsString = matches[1];
+      moveListAsString = matches[2];
+    }
+
+    if(!moveListAsString)
+      throw new Error('Invalid pgn, cannot extract move list.');
+
+    if(headersAsString){
+      // parsing headers
+      var headerRegexAsString = 'NL|\\[(\\w+)\\s+\\"(.*?)\\"\\]';
+      var headerRegex = new RegExp(headerRegexAsString.replace(/NL/g, _newLine), 'g');
+      while ((matches = headerRegex.exec(headersAsString)) !== null)
+      {
+        if(matches[1]) emit('header',{name:matches[1], value:matches[2]});
+      }
+    }
+
+    // parsing movelist
+    var moveListRegexString = '\\s+|NL|(\\d+)\\.+|\\$(\\d+)|(\\d\\-\\d)|' +
+      '([\\w\\-]+)|\\{(.*?)\\}|(\\()|(\\))';
+    var moveListRegex = new RegExp(moveListRegexString.replace(/NL/g, _newLine), 'g');
+    while ((matches = moveListRegex.exec( moveListAsString)) !== null)
+    {
+      var idx = 1;
+      if (matches[idx]){
+        emit('move-num',matches[idx]);
+      }
+      idx++;
+      if (matches[idx]){
+        emit('nag',matches[idx]);
+      }
+      idx++;
+      if (matches[idx]){
+        emit('score',matches[idx]);
+      }
+      idx++;
+      if (matches[idx]){
+        emit('move',matches[idx]);
+      }
+      idx++;
+      if (matches[idx]){
+        emit('comment',matches[idx]);
+      }
+      idx++;
+      if (matches[idx]){
+        emit('variation-start');
+      }
+      idx++;
+      if (matches[idx]){
+        emit('variation-end');
+      }
+    }
+    emit('end');
+  };
+
+  /***************************************************************************
+   * Chess Class Constructor 
+   **************************************************************************/
+
   var Chess = function(fen) {
 
     var position = {
@@ -663,6 +749,8 @@
     var newline_char = (typeof options === 'object' &&
                         typeof options.newline_char === 'string') ?
                           options.newline_char : '\r?\n';
+    var regex = /[]*{}?\r\n/;
+
     var regex = new RegExp('^(\\[(.|' + mask(newline_char) + ')*\\])' +
                            '(' + mask(newline_char) + ')*' +
                            '1.(' + mask(newline_char) + '|.)*$', 'g');
@@ -1613,6 +1701,8 @@
 
   /* export Chess object if using node or any other CommonJS compatible
    * environment */
-  if (typeof exports !== 'undefined') exports.Chess = Chess;
+  if (typeof exports !== 'undefined') {
+    exports.Chess = Chess;
+    exports.PgnParser = PgnParser;
+  }
 })();
-
