@@ -1217,7 +1217,8 @@
   */
   Chess.prototype._move_from_san = function(move) {
     var to, from, flags = BITS.NORMAL, promotion;
-    var parse = move.match(/^([NBKRQ])?([abcdefgh12345678][12345678]?)?(x)?([abcdefgh][12345678])(=[NBRQ])?/);
+    var parse = move.match(/^([NBKRQ])?([abcdefgh12345678][12345678]?)?(x)?([abcdefgh][12345678])(=?[NBRQ])?/);
+
     var pos = this._pos();
     if (move.slice(0, 5) === 'O-O-O') {
       from = pos.kings[pos.turn];
@@ -1294,6 +1295,11 @@
       // promotion?
       if (parse[5]) {
         promotion = parse[5][1].toLowerCase();
+        if(typeof parse[5][1] === 'undefined') {
+          promotion = parse[5][0].toLowerCase();
+        } else {
+          promotion = parse[5][1].toLowerCase();
+        }
       }
     }
     if (from >=0 && to >=0 && flags) {
