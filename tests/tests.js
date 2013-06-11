@@ -915,6 +915,17 @@ suite("History", function() {
   });
 });
 
+suite("ascii", function() {
+
+  var chess = new Chess();
+
+  test('ascii', function() {
+    var ascii = chess.ascii();
+    assert(ascii.indexOf('r  n  b  q  k  b  n  r') >= 0);
+    assert(ascii.indexOf('p  p  p  p  p  p  p  p') >= 0);
+  });
+});
+
 suite('Regression Tests', function() {
   // Github Issue #32 reported by AlgoTrader
   test('Issue #32 - castling flag reappearing', function() {

@@ -737,7 +737,7 @@
 
   Chess.prototype.ascii = function() {
     var s = '   +------------------------+\n';
-    var board = this.getBoard();
+    var pos = this._pos();
     for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
       /* display the rank */
       if (file(i) === 0) {
@@ -745,11 +745,11 @@
       }
 
       /* empty piece */
-      if (board[i] == null) {
+      if (pos.board[i] == null) {
         s += ' . ';
       } else {
-        var piece = board[i].type;
-        var color = board[i].color;
+        var piece = pos.board[i].type;
+        var color = pos.board[i].color;
         var symbol = (color === WHITE) ?
                      piece.toUpperCase() : piece.toLowerCase();
         s += ' ' + symbol + ' ';
