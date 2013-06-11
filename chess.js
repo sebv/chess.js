@@ -218,7 +218,8 @@
       replace(/\r/g, '\\r').
       replace(/\//g, '\\/');
 
-    var regexString = '^((?:\\[.*\\](?:NL))*)((?:\\{.*\\}(?:NL))?(?:NL)1\\.(?:.*(?:NL)?)*)$';
+    var regexString = '^(?:NL)*((?:\\[.*\\](?:NL))*)((?:\\{((?:.|NL)*?)\\}|(?:NL))*' +
+      '(?:NL)1\\.(?:.*(?:NL)?)*)$';
     var regex = new RegExp(regexString.replace(/NL/g, _newLine));
     var matches = pgn.match(regex);
     var headersAsString,moveListAsString;
@@ -234,18 +235,16 @@
       // parsing headers
       var headerRegexAsString = 'NL|\\[(\\w+)\\s+\\"(.*?)\\"\\]';
       var headerRegex = new RegExp(headerRegexAsString.replace(/NL/g, _newLine), 'g');
-      while ((matches = headerRegex.exec(headersAsString)) !== null)
-      {
+      while ((matches = headerRegex.exec(headersAsString)) !== null) {
         if(matches[1]) emit('header',{name:matches[1], value:matches[2]});
       }
     }
 
     // parsing movelist
     var moveListRegexString = '\\s+|NL|(\\d+)\\.+|\\$(\\d+)|(\\d\\-\\d)|' +
-      '([\\w\\-]+)|\\{(.*?)\\}|(\\()|(\\))';
+      '([\\w\\-\\#\\+\\?\\!]+)|\\{((?:.|NL)*?)\\}|(\\()|(\\))';
     var moveListRegex = new RegExp(moveListRegexString.replace(/NL/g, _newLine), 'g');
-    while ((matches = moveListRegex.exec( moveListAsString)) !== null)
-    {
+    while ((matches = moveListRegex.exec( moveListAsString)) !== null) {
       var idx = 1;
       if (matches[idx]){
         emit('move-num',matches[idx]);
@@ -264,7 +263,16 @@
       }
       idx++;
       if (matches[idx]){
-        emit('comment',matches[idx]);
+        var rawComment = matches[idx],
+            comment = '';
+        var commentRegexAsString = '(.+?)NL|(.+)';
+        var commentRegex = new RegExp(commentRegexAsString.replace(/NL/g, _newLine), 'g');
+        var cMatches;
+        while ((cMatches = commentRegex.exec(rawComment)) !== null) {
+          if(cMatches[1]) comment += cMatches[1] + ' ';
+          else if(cMatches[2]) comment += cMatches[2];
+        }
+        emit('comment',comment.trim());
       }
       idx++;
       if (matches[idx]){
