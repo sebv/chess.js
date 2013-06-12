@@ -113,6 +113,7 @@ suite("PGN parser", function() {
           score,
           headers = {},
           comments = {},
+          nags = {},
           end,
           currentMove = null,
           currentMoveNum = null;
@@ -134,6 +135,9 @@ suite("PGN parser", function() {
           }
           if(evt === 'comment'){
             comments[currentMove ? currentMove : 'main'] = data;
+          }
+          if(evt === 'nag'){
+            nags[currentMove ? currentMove : 'main'] = data;
           }
           if(evt === 'end'){
             end = true;
@@ -159,6 +163,7 @@ suite("PGN parser", function() {
         headers['Event'].should.equal("Paris");
         headers['ECO'].should.equal("C41");
         headers['PlyCount'].should.equal("33");
+        
         comments['main'].should.equal("Main comment");
         comments['1.e5'].should.equal("most common");
         comments['3.Bg4?'].should.equal("This is a weak move already.--Fischer");
@@ -167,6 +172,10 @@ suite("PGN parser", function() {
           "is hanging, the bishop is blocked because of the " +
           "Queen.--Fischer");
         comments['15.Bxd7+'].should.equal("nearly finished");
+
+        nags['1.e5'].should.equal(19);
+        nags['3.d4'].should.equal(25);
+        nags['10.cxb5'].should.equal(29);
       });
     });
   });

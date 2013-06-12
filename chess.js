@@ -251,7 +251,7 @@
       }
       idx++;
       if (matches[idx]){
-        emit('nag',matches[idx]);
+        emit('nag', parseInt(matches[idx], 10));
       }
       idx++;
       if (matches[idx]){
