@@ -74,14 +74,18 @@ var TestClient = function() {
       this.headers[data.name] = data.value;
     }
     if(evt === 'comment'){
-      this.comments[this.currentLine.currentMove ? this.currentLine.currentMove : 'main'] = data;
+      var key = this.currentLine.id + " / " +  (this.currentLine.currentMove ? this.currentLine.currentMove : 'start');
+      while(this.comments[key]) key += ' / #';
+      this.comments[key] = data;
     }
     if(evt === 'nag'){
-      this.nags[this.currentLine.currentMove ? this.currentLine.currentMove : 'main'] = data;
+      var key = this.currentLine.id + " / " +  (this.currentLine.currentMove ? this.currentLine.currentMove : 'start');
+      while(this.nags[key]) key += ' / #';
+      this.nags[key] = data;
     }
     if(evt === 'variation-start'){
       this.currentLine = initLine(this.currentLine.prevMove ? this.currentLine.prevMove : 'start' , this.currentLine);
-      if(this.lines[this.currentLine.id]) this.currentLine.id = this.currentLine.id + ' / # ';
+      while(this.lines[this.currentLine.id]) this.currentLine.id += ' / #';
       this.lines[this.currentLine.id] = this.currentLine;
     }
     if(evt === 'variation-end'){
@@ -178,18 +182,18 @@ suite("PGN parser", function() {
         tc.headers['ECO'].should.equal("C41");
         tc.headers['PlyCount'].should.equal("33");
         
-        tc.comments['main'].should.equal("Main comment");
-        tc.comments['1.e5'].should.equal("most common");
-        tc.comments['3.Bg4?'].should.equal("This is a weak move already.--Fischer");
-        tc.comments['9.Bg5!'].should.equal("Black is in what's like a zugzwang position " +
+        tc.comments['main / start'].should.equal("Main comment");
+        tc.comments['main / 1.e5'].should.equal("most common");
+        tc.comments['main / 3.Bg4?'].should.equal("This is a weak move already.--Fischer");
+        tc.comments['main / 9.Bg5!'].should.equal("Black is in what's like a zugzwang position " +
           "here. He can't develop the [Queen's] knight because the pawn " +
           "is hanging, the bishop is blocked because of the " +
           "Queen.--Fischer");
-        tc.comments['15.Bxd7+'].should.equal("nearly finished");
+        tc.comments['main / 15.Bxd7+'].should.equal("nearly finished");
 
-        tc.nags['1.e5'].should.equal(19);
-        tc.nags['3.d4'].should.equal(25);
-        tc.nags['10.cxb5'].should.equal(29);
+        tc.nags['main / 1.e5'].should.equal(19);
+        tc.nags['main / 3.d4'].should.equal(25);
+        tc.nags['main / 10.cxb5'].should.equal(29);
       });
     });
 
@@ -209,6 +213,8 @@ suite("PGN parser", function() {
     var variationPgn = readFile('variation.pgn');
     var variationTests = [
       {name:'variation 1', pgn: variationPgn},
+      {name:'variation 2', pgn: variationPgn, newLine: '<br />'},
+      {name:'variation 3', pgn: variationPgn, newLine: '\r\n'},
     ];
 
     variationTests.forEach(function(variationTest) {
@@ -276,6 +282,8 @@ suite("PGN parser", function() {
     var complexPgn = readFile('complex.pgn');
     var complexTests = [
       {name:'complex 1', pgn: complexPgn},
+      {name:'complex 2', pgn: complexPgn, newLine: '<br />'},
+      {name:'complex 3', pgn: complexPgn, newLine: '\r\n'},
     ];
 
     complexTests.forEach(function(complexTest) {
@@ -302,9 +310,38 @@ suite("PGN parser", function() {
         // main line
         tc.lines['main'].movesAsString.match(/^ e4 e5 Nf3 Nc6 Bc4 Bc5 O-O d6 c3 Be6 Bxe6 fxe6/).should.exist;
         tc.lines['main'].movesAsString.match(/ Kxd4 Ne2\+ Kxd5 Nxc1$/).should.exist;
-        
-        //                                               
+        tc.comments['main / start'].should.equal('Inaccuracies(?!): 7 = 17.9% of moves | ' +
+          'Mistakes(?): 5 = 12.8% of moves | Blunders(??): 0 = 0.0% of moves');
+        tc.comments['main / 1.e4'].should.equal('(Book Move)');
+        tc.nags['main / 11.Bg5'].should.equals(2);
+
+        // first variation                                               
         tc.lines['main / 2.Nc6'].should.exist;
+        tc.lines['main / 2.Nc6'].movesAsString.match(/^ Bb5 f5 d3 fxe4/ ).should.exist;
+        tc.comments['main / 2.Nc6 / start'].should.equals('BEST MOVE (0.4)');
+        tc.nags['main / 2.Nc6 / 9.Be7'].should.equals(14);
+        // variation starting at the same move
+        tc.lines['main / 2.Nc6 / #'].should.exist;
+        tc.lines['main / 2.Nc6 / #'].movesAsString.match(/^ Bc4 Bc5 d3 Nf6 Nc3/ ).should.exist;
+        tc.comments['main / 2.Nc6 / # / start'].should.equals('INACCURACY (0.04)');
+        tc.nags['main / 2.Nc6 / # / 9.Bxd5'].should.equals(10);
+
+        // variation in the middle
+        tc.lines['main / 20.Nfxd5'].should.exist;
+        tc.lines['main / 20.Nfxd5'].movesAsString.match(/^ Rg3 g5 a3 Rce8 Nc3 Rhf8 / ).should.exist;
+        tc.comments['main / 20.Nfxd5 / start'].should.equals('BEST MOVE (-1.65)');
+        tc.nags['main / 20.Nfxd5 / 28.Qf5'].should.equals(19);
+        // variation starting at the same move
+        tc.lines['main / 20.Nfxd5 / #'].should.exist;
+        tc.lines['main / 20.Nfxd5 / #'].movesAsString.match(/^ Rc4 b5 R4c2 bxa4 a3/ ).should.exist;
+        tc.comments['main / 20.Nfxd5 / # / start'].should.equals('MISTAKE (-3.55)');
+        tc.nags['main / 20.Nfxd5 / # / 29.Qxc8'].should.equals(19);
+
+        // last variation
+        tc.lines['main / 40.Kxd5'].should.exist;
+        tc.lines['main / 40.Kxd5'].movesAsString.match(/^ Nxc1 Rh5 g4 fxg4 Ne2/ ).should.exist;
+        tc.comments['main / 40.Kxd5 / start'].should.equals('CONTINUATION (11.27)');
+        tc.nags['main / 40.Kxd5 / 51.Kb6'].should.equals(18);
       });
     });
   });
