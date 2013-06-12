@@ -28,6 +28,7 @@ function readFile(filename) {
 }
 
 suite("PGN parser", function() {
+  suite("aaa", function() {
   
   var simplePgn = readFile('simple.pgn');
   var simplePgn2 = simplePgn.replace(' 1-0', '\n1-0');
@@ -144,7 +145,7 @@ suite("PGN parser", function() {
       var numOfMoves = movesAsString.match(/\s/g).length;
       end.should.be.true;
       numOfMoves.should.equal(33);
-      movesAsString.match(/^ e4 e5 Nf3 d6 d4 Bg4?/).should.exist;
+      movesAsString.match(/^ e4 e5 Nf3 d6 d4 Bg4\?/).should.exist;
       movesAsString.match(/Bxd7\+ Nxd7 Qb8\+ Nxb8 Rd8#$/).should.exist;
       movesAsString.match(/Bg5\!/).should.exist;
       movesAsString.match(/Nxb5\!\!/).should.exist;
@@ -165,6 +166,7 @@ suite("PGN parser", function() {
         "Queen.--Fischer");
       comments['15.Bxd7+'].should.equal("nearly finished");
     });
+  });
   });
 
 });
