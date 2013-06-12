@@ -89,7 +89,7 @@ suite("PGN parser", function() {
     });
   });
 
-  suite("testing comments and ! ? !! ?? after moves", function() {
+  suite("testing comments, ! ? !! ?? symbols after moves and nags", function() {
 
     // comments tests
     var commentPgn = readFile('comment.pgn');
