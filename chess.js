@@ -219,9 +219,10 @@
       replace(/\//g, '\\/');
 
     var regexString = '^(?:NL)*((?:\\[.*\\](?:NL))*)((?:\\{((?:.|NL)*?)\\}|(?:NL))*' +
-      '(?:NL)1\\.(?:.*(?:NL)?)*)$';
+      '1\\.(?:.*(?:NL)?)*)$';
     var regex = new RegExp(regexString.replace(/NL/g, _newLine));
     var matches = pgn.match(regex);
+
     var headersAsString,moveListAsString;
     if(matches) {
       headersAsString = matches[1];
@@ -242,27 +243,26 @@
 
     // parsing movelist
     var moveListRegexString = '\\s+|NL|(\\d+)\\.+|\\$(\\d+)|(\\d\\-\\d)|' +
-      '([\\w\\-\\#\\+\\?\\!]+)|\\{((?:.|NL)*?)\\}|(\\()|(\\))';
+      '([\\w\\-\\#\\+\\?\\!]+)NL|([\\w\\-\\#\\+\\?\\!]+)|\\{((?:.|NL)*?)\\}|(\\()|(\\))';
     var moveListRegex = new RegExp(moveListRegexString.replace(/NL/g, _newLine), 'g');
     while ((matches = moveListRegex.exec( moveListAsString)) !== null) {
-      var idx = 1;
-      if (matches[idx]){
+      var idx = null;
+      for(var i = 1; i <=8 ; i++) { if(matches[i]){ idx = i; break;} }
+      switch(idx) {
+      case 1:
         emit('move-num',matches[idx]);
-      }
-      idx++;
-      if (matches[idx]){
+        break;
+      case 2:
         emit('nag', parseInt(matches[idx], 10));
-      }
-      idx++;
-      if (matches[idx]){
+        break;
+      case 3:
         emit('score',matches[idx]);
-      }
-      idx++;
-      if (matches[idx]){
+        break;
+      case 4:
+      case 5:
         emit('move',matches[idx]);
-      }
-      idx++;
-      if (matches[idx]){
+        break;
+      case 6:
         var rawComment = matches[idx],
             comment = '';
         var commentRegexAsString = '(.+?)NL|(.+)';
@@ -273,14 +273,13 @@
           else if(cMatches[2]) comment += cMatches[2];
         }
         emit('comment',comment.trim());
-      }
-      idx++;
-      if (matches[idx]){
+        break;
+      case 7:
         emit('variation-start');
-      }
-      idx++;
-      if (matches[idx]){
+        break;
+      case 8:
         emit('variation-end');
+        break;
       }
     }
     emit('end');
@@ -863,111 +862,48 @@
   };
 
   Chess.prototype.load_pgn = function(pgn, options) {
-    function mask(str) {
-      return str.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
-    }
-
-    function has_keys(object) {
-      var has_keys = false;
-      for (var key in object) {
-        has_keys = true;
-      }
-      return has_keys;
-    }
-
-    function parse_pgn_header(header, options) {
-      var newline_char = (typeof options === 'object' &&
-                          typeof options.newline_char === 'string') ?
-                          options.newline_char : '\r?\n';
-      var header_obj = {};
-      var headers = header.split(newline_char);
-      var key = '';
-      var value = '';
-
-      for (var i = 0; i < headers.length; i++) {
-        key = headers[i].replace(/^\[([A-Z][A-Za-z]*)\s.*\]$/, '$1');
-        value = headers[i].replace(/^\[[A-Za-z]+\s"(.*)"\]$/, '$1');
-        if (trim(key).length > 0) {
-          header_obj[key] = value;
-        }
-      }
-
-      return header_obj;
-    }
-
     var pos = this._pos();
 
     var newline_char = (typeof options === 'object' &&
                         typeof options.newline_char === 'string') ?
                           options.newline_char : '\r?\n';
-    var regex = /[]*{}?\r\n/;
-
-    var regex = new RegExp('^(\\[(.|' + mask(newline_char) + ')*\\])' +
-                           '(' + mask(newline_char) + ')*' +
-                           '1.(' + mask(newline_char) + '|.)*$', 'g');
-
-    /* get header part of the PGN file */
-    var header_string = pgn.replace(regex, '$1');
-
-    /* no info part given, begins with moves */
-    if (header_string[0] !== '[') {
-      header_string = '';
-    }
 
     this.reset();
-
-    /* parse PGN header */
-    var headers = parse_pgn_header(header_string, options);
-    for (var key in headers) {
-      this._set_header([key, headers[key]]);
+    
+    var parser = new PgnParser(newline_char);
+    var lastMove = null,
+        ended = false;
+    try {
+      parser.parse( pgn, function(evt, data) {
+        switch(evt) {
+        case 'header':
+          pos.header[data.name] = data.value;
+          break;
+        case  'move':
+          var move = this._move_from_san(trim(data));
+            /* move not possible! (don't clear the board to examine to show the
+             * latest valid position)
+             */
+          if (move == null) {
+            throw new Error('Invalid move');
+          } else {
+            this._make_move(move);
+          }
+          lastMove = move;
+          break;
+        case  'score':
+          if(!pos.header['Result']) pos.header['Result'] = data;
+          break;
+        case 'end':
+          ended  = true;
+          break;
+        }
+      }.bind(this));
+    } catch(err){
+      console.error(err);
+      return false;
     }
-
-    /* delete header to get the moves */
-    var ms = pgn.replace(header_string, '').replace(new RegExp(mask(newline_char), 'g'), ' ');
-
-    /* delete comments */
-    ms = ms.replace(/(\{[^}]+\})+?/g, '');
-
-    /* delete move numbers */
-    ms = ms.replace(/\d+\./g, '');
-
-
-    /* trim and get array of moves */
-    var moves = trim(ms).split(new RegExp(/\s+/));
-
-    /* delete empty entries */
-    moves = moves.join(',').replace(/,,+/g, ',').split(',');
-    var move = '';
-
-    for (var half_move = 0; half_move < moves.length - 1; half_move++) {
-      move = this._move_from_san(trim(moves[half_move]));
-
-      /* move not possible! (don't clear the board to examine to show the
-       * latest valid position)
-       */
-      if (move == null) {
-        return false;
-      } else {
-        this._make_move(move);
-      }
-    }
-
-    /* examine last move */
-    move = moves[moves.length - 1];
-    if (POSSIBLE_RESULTS.indexOf(move) > -1) {
-      if (has_keys(pos.header) && typeof pos.header.Result === 'undefined') {
-        this._set_header(['Result', move]);
-      }
-    }
-    else {
-      move = this._move_from_san(trim(move));
-      if (move == null) {
-        return false;
-      } else {
-        this._make_move(move);
-      }
-    }
-    return true;
+    return ended;
   };
 
   Chess.prototype.header = function(args) {

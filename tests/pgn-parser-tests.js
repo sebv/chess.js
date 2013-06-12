@@ -46,7 +46,6 @@ function initLine(id, parent) {
 }
 
 var TestClient = function() {
-  var _this = this;
   this.score = null;
   this.headers = {};
   this.comments = {};
@@ -57,48 +56,47 @@ var TestClient = function() {
   this.lines[this.currentLine.id] = this.currentLine;
 
   var _cb = function(evt,data) {
-    if(evt === 'move'){
+    switch(evt) {
+    case 'move':
       this.currentLine.movesAsString += ' ' + data;
       this.currentLine.movesAsStringWithNum += ' ' + data;
       this.currentLine.prevMove = this.currentLine.currentMove;
       this.currentLine.currentMove = this.currentLine.currentMoveNum + '.' + data;
-    }
-    if(evt === 'move-num'){
+      break;
+    case 'move-num':
       this.currentLine.movesAsStringWithNum += ' ' + data + ':';
       this.currentLine.currentMoveNum = data;
-    }
-    if(evt === 'score'){
+      break;
+    case 'score':
       this.score = data;
-    }
-    if(evt === 'header'){
+      break;
+    case 'header':
       this.headers[data.name] = data.value;
-    }
-    if(evt === 'comment'){
+      break;
+    case 'comment':
       var key = this.currentLine.id + " / " +  (this.currentLine.currentMove ? this.currentLine.currentMove : 'start');
       while(this.comments[key]) key += ' / #';
       this.comments[key] = data;
-    }
-    if(evt === 'nag'){
+      break;
+    case 'nag':
       var key = this.currentLine.id + " / " +  (this.currentLine.currentMove ? this.currentLine.currentMove : 'start');
       while(this.nags[key]) key += ' / #';
       this.nags[key] = data;
-    }
-    if(evt === 'variation-start'){
+      break;
+    case 'variation-start':
       this.currentLine = initLine(this.currentLine.prevMove ? this.currentLine.prevMove : 'start' , this.currentLine);
       while(this.lines[this.currentLine.id]) this.currentLine.id += ' / #';
       this.lines[this.currentLine.id] = this.currentLine;
-    }
-    if(evt === 'variation-end'){
+      break;
+    case 'variation-end':
       this.currentLine = this.currentLine.parent;
-    }
-    if(evt === 'end'){
+      break;
+    case 'end':
       this.end = true;
+      break;
     }
   };
-
-  this.cb = function() {
-    _cb.apply(_this, arguments);
-  };
+  this.cb = _cb.bind(this);
 };
 
 suite("PGN parser", function() {
@@ -106,16 +104,19 @@ suite("PGN parser", function() {
   
     var simplePgn = readFile('simple.pgn');
     var simplePgn2 = simplePgn.replace(' 1-0', '\n1-0');
+    var simplePgn3 = simplePgn.replace(/\[.*\]/g, '').trim();
     var simpleTests = [
-      {name:'simple pgn 1', pgn: simplePgn},
+      {name:'simple pgn 1a', pgn: simplePgn},
+      {name:'simple pgn 1b', pgn: '\n\n\n' + simplePgn + '\n\n\n'},
+      {name:'simple pgn 1c with newline: \\n', pgn: simplePgn, newLine: '\n'},
+      {name:'simple pgn 1d with newline: \\r\\n', pgn: simplePgn, newLine: '\r\n'},
+      {name:'simple pgn 1e with newline: \\r\\n', pgn: simplePgn, newLine: '\r?\n'},
+      {name:'simple pgn 1f with newline: <br />', pgn: simplePgn, newLine: '<br />'},
+      {name:'simple pgn 1g with newline: <br />\\n?', pgn: simplePgn, newLine: '<br />\n'},
+      {name:'simple pgn 1h with newline: <br />\\n?', pgn: simplePgn.trim(), newLine: '<br />\n?'},
+      {name:'simple pgn 1i with newline: <br />\\n?', pgn: simplePgn.trim(), newLine: 'BLAH'},
       {name:'simple pgn 2', pgn: simplePgn2},
-      {name:'simple pgn 1', pgn: '\n\n\n' + simplePgn + '\n\n\n'},
-      {name:'simple pgn 1 with newline: \\n', pgn: simplePgn, newLine: '\n'},
-      {name:'simple pgn 1 with newline: \\r\\n', pgn: simplePgn, newLine: '\r\n'},
-      {name:'simple pgn 1 with newline: \\r\\n', pgn: simplePgn, newLine: '\r?\n'},
-      {name:'simple pgn 1 with newline: <br />', pgn: simplePgn, newLine: '<br />'},
-      {name:'simple pgn 1 with newline: <br />\\n?', pgn: simplePgn, newLine: '<br />\n'},
-      {name:'simple pgn 1 with newline: <br />\\n?', pgn: simplePgn.trim(), newLine: '<br />\n?'},
+      {name:'simple pgn 3', pgn: simplePgn3},
     ];
     simpleTests.forEach(function(simpleTest) {
       test(simpleTest.name, function() {
@@ -133,10 +134,12 @@ suite("PGN parser", function() {
         tc.lines['main'].movesAsStringWithNum.match(/^ 1: c4 e6 2: Nf3 d5 3: d4 Nf6 4: Nc3 Be7/).should.exist;
         tc.lines['main'].movesAsStringWithNum.match(/ Nf6 38: Rxf6 gxf6 39: Rxf6 Kg8 40: Bc4 Kh8 41: Qf4$/);
         tc.score.should.equal('1-0');
-        Object.keys(tc.headers).should.have.length(12);
-        tc.headers['Event'].should.equal("Reykjavik WCh");
-        tc.headers['ECO'].should.equal("D59");
-        tc.headers['PlyCount'].should.equal("81");
+        if(simpleTest.name !== 'simple pgn 3') {
+          Object.keys(tc.headers).should.have.length(12);
+          tc.headers['Event'].should.equal("Reykjavik WCh");
+          tc.headers['ECO'].should.equal("D59");
+          tc.headers['PlyCount'].should.equal("81");
+        }
       });
     });
   });
