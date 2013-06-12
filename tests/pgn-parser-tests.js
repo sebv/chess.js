@@ -178,6 +178,15 @@ suite("PGN parser", function() {
         nags['10.cxb5'].should.equal(29);
       });
     });
+
+    test('nag defs', function() {
+      PgnParser.NAGS.should.exist;
+      PgnParser.NAGS[0].should.equals('null annotation');
+      PgnParser.NAGS[80].should.equals('White has a moderately weak pawn structure');
+      PgnParser.NAGS[139].should.equals('Black has severe time control pressure');
+
+    });
+
   });
 
   suite("testing variations", function() {
