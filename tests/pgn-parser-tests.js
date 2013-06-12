@@ -170,6 +170,126 @@ suite("PGN parser", function() {
       });
     });
   });
+
+  suite("testing variations", function() {
+
+    // comments tests
+    var variationPgn = readFile('variation.pgn');
+    var variationTests = [
+      {name:'variation 1', pgn: variationPgn},
+    ];
+
+    variationTests.forEach(function(variationTest) {
+      test(variationTest.name, function() {
+        function initLine(id, parent) {
+          if(parent) id = parent.id + ' / ' + id;
+
+          return {
+            id: id,
+            parent: parent,
+            movesAsString: '',
+            movesAsStringWithNum: '',
+            currentMove: null,
+            currentMoveNum: null
+          };
+        }
+
+        var
+          score,
+          headers = {},
+          comments = {},
+          lines = {},
+          end;
+
+        var currentLine = initLine('main');
+        lines[currentLine.id] = currentLine;
+
+        var cb = function(evt,data) {
+          if(evt === 'move'){
+            currentLine.movesAsString += ' ' + data;
+            currentLine.movesAsStringWithNum += ' ' + data;
+            currentLine.prevMove = currentLine.currentMove;
+            currentLine.currentMove = currentLine.currentMoveNum + '.' + data;
+          }
+          if(evt === 'move-num'){
+            currentLine.movesAsStringWithNum += ' ' + data + ':';
+            currentLine.currentMoveNum = data;
+          }
+          if(evt === 'score'){
+            score = data;
+          }
+          if(evt === 'header'){
+            headers[data.name] = data.value;
+          }
+          if(evt === 'comment'){
+            comments[currentLine.currentMove ? currentLine.currentMove : 'main'] = data;
+          }
+          if(evt === 'variation-start'){
+            currentLine = initLine(currentLine.prevMove ? currentLine.prevMove : 'start' , currentLine);
+            lines[currentLine.id] = currentLine;
+          }
+          if(evt === 'variation-end'){
+            currentLine = currentLine.parent;
+          }
+          if(evt === 'end'){
+            end = true;
+          }
+        };
+        var pgn = variationTest.pgn;
+        if(variationTest.newLine) pgn = pgn.replace(/\n/g, variationTest.newLine.replace(/\?/g,''));
+        var parser;
+        parser = new PgnParser(variationTest.newLine);
+        parser.parse(pgn, cb);
+        score.should.equal('1-0');
+        end.should.be.true;
+        Object.keys(headers).should.have.length(12);
+        headers['Event'].should.equal("Reykjavik WCh");
+        headers['ECO'].should.equal("D59");
+        headers['PlyCount'].should.equal("81");
+        Object.keys(lines).should.have.length(10);
+        // main line
+        lines['main'].should.exist;
+        var numOfMoves = lines['main'].movesAsString.match(/\s/g).length;
+        numOfMoves.should.equal(81);
+        lines['main'].movesAsString.match(/^ c4 e6 Nf3 d5 d4 Nf6 Nc3 Be7/).should.exist;
+        lines['main'].movesAsString.match(/ Rxf6 Kg8 Bc4 Kh8 Qf4$/).should.exist;
+        lines['main'].movesAsStringWithNum.match(/^ 1. c4 e6 2. Nf3 d5 3. d4 Nf6 4. Nc3 Be7/).should.exist;
+        lines['main'].movesAsStringWithNum.match(/ 39. Rxf6 Kg8 40. Bc4 Kh8 41. Qf4$/).should.exist;
+        // alt start
+        lines['main / start'].should.exist;
+        lines['main / start'].movesAsString.should.equal(' e5 Nf3');
+        // move 3 line
+        lines['main / 3.d4'].should.exist;
+        lines['main / 3.d4'].movesAsString.should.equal(' Be7 Nc3 Nf6');
+        // move 16 line
+        lines['main / 16.O-O'].should.exist;
+        lines['main / 16.O-O'].movesAsString.should.equal(' Ra6 Be2 Nd7 Nd4 Qf8 Nxe6');
+        // move 21 line
+        lines['main / 21.f4'].should.exist;
+        lines['main / 21.f4'].movesAsString.should.equal( ' Qe8 e5 Rb8 Bc4 Kh8 Qh3 Nf8 b3 a5 f5 exf5 Rxf5 ' +
+          'Nh7 Rcf1 Qd8 Qg3 Re7 h4 Rbb7 e6 Rbc7');
+        // move 27 line
+        lines['main / 27.Rxf5'].should.exist;
+        lines['main / 27.Rxf5'].movesAsString.should.equal(' Qd8 Rcf1 Nh7 Qg3 Re7');
+        // move 27 line / subline
+        lines['main / 27.Rxf5 / 28.Rcf1'].should.exist;
+        lines['main / 27.Rxf5 / 28.Rcf1'].movesAsString.should.equal(' Re7 Qg3 Nh7');
+        // move 29 line
+        lines['main / 29.Re7'].should.exist;
+        lines['main / 29.Re7'].movesAsString.should.equal(' e6 Rbb7 h4 Rbc7 Qe5 Qe8 a4 Qd8' +
+          ' R1f2 Qe8 R2f3 Qd8 Bd3 Qe8 Qe4 Nf6 Rxf6 gxf6 Rxf6');
+        // move 29 line / move 32 subline
+        lines['main / 29.Re7 / 32.Qe5'].should.exist;
+        lines['main / 29.Re7 / 32.Qe5'].movesAsString.
+          should.equal(' Qd8 a4 Qe8 R1f2 Qe8 R2f3 Qd8');
+        // move 29 line / move 32 subline /move 33 subline
+        lines['main / 29.Re7 / 32.Qe5 / 33.Qe8'].should.exist;
+        lines['main / 29.Re7 / 32.Qe5 / 33.Qe8'].movesAsString.
+          should.equal(' R2f3 Qe8 R1f2');
+      });
+    });
+  });
+
 });
 
 
