@@ -302,7 +302,9 @@ suite("PGN parser", function() {
         // main line
         tc.lines['main'].movesAsString.match(/^ e4 e5 Nf3 Nc6 Bc4 Bc5 O-O d6 c3 Be6 Bxe6 fxe6/).should.exist;
         tc.lines['main'].movesAsString.match(/ Kxd4 Ne2\+ Kxd5 Nxc1$/).should.exist;
-                                               
+        
+        //                                               
+        tc.lines['main / 2.Nc6'].should.exist;
       });
     });
   });
