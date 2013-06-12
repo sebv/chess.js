@@ -81,6 +81,7 @@ var TestClient = function() {
     }
     if(evt === 'variation-start'){
       this.currentLine = initLine(this.currentLine.prevMove ? this.currentLine.prevMove : 'start' , this.currentLine);
+      if(this.lines[this.currentLine.id]) this.currentLine.id = this.currentLine.id + ' / # ';
       this.lines[this.currentLine.id] = this.currentLine;
     }
     if(evt === 'variation-end'){
@@ -265,6 +266,43 @@ suite("PGN parser", function() {
         tc.lines['main / 29.Re7 / 32.Qe5 / 33.Qe8'].should.exist;
         tc.lines['main / 29.Re7 / 32.Qe5 / 33.Qe8'].movesAsString.
           should.equal(' R2f3 Qe8 R1f2');
+      });
+    });
+  });
+
+  suite("testing real complex file", function() {
+
+    // comments tests
+    var complexPgn = readFile('complex.pgn');
+    var complexTests = [
+      {name:'complex 1', pgn: complexPgn},
+    ];
+
+    complexTests.forEach(function(complexTest) {
+      test(complexTest.name, function() {
+        var tc = new TestClient();
+        var pgn = fixNewLine(complexTest.pgn, complexTest.newLine);
+        var parser;
+        parser = new PgnParser(complexTest.newLine);
+        parser.parse(pgn, tc.cb);
+
+        tc.score.should.equal('1-0');
+        tc.end.should.be.true;
+
+        Object.keys(tc.headers).should.have.length(13);
+        tc.headers['Event'].should.equal("Live Chess");
+        tc.headers['ECO'].should.equal("C50");
+        tc.headers['TimeControl'].should.equal("15|10");
+
+        Object.keys(tc.lines).should.have.length(44);
+        tc.lines['main'].should.exist;
+        var numOfMoves = tc.lines['main'].movesAsString.match(/\s/g).length;
+        numOfMoves.should.equal(80);
+        
+        // main line
+        tc.lines['main'].movesAsString.match(/^ e4 e5 Nf3 Nc6 Bc4 Bc5 O-O d6 c3 Be6 Bxe6 fxe6/).should.exist;
+        tc.lines['main'].movesAsString.match(/ Kxd4 Ne2\+ Kxd5 Nxc1$/).should.exist;
+                                               
       });
     });
   });
