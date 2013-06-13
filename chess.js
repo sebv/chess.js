@@ -478,9 +478,10 @@
       castling: {w: 0, b: 0},
       ep_square: EMPTY,
       half_moves: 0,
-      move_number: 1,
-      moveList: []
+      move_number: 1
     };
+
+    this.moveList = [];
 
     /* if the user passes in a fen string, load it, else default to
      * starting position
@@ -810,13 +811,13 @@
       header_exists = true;
     }
 
-    if (header_exists && pos.moveList.length) {
+    if (header_exists && this.moveList.length) {
       result.push(newline);
     }
 
     /* pop all of moveList onto reversed_moveList */
     var reversed_moveList = [];
-    while (pos.moveList.length > 0) {
+    while (this.moveList.length > 0) {
       reversed_moveList.push(this._undo_move());
     }
 
@@ -1030,7 +1031,7 @@
     pos.ep_square = EMPTY;
     pos.half_moves = 0;
     pos.move_number = 1;
-    pos.moveList = [];
+    this.moveList = [];
     this.headers = {};
     this._update_setup(this._generate_fen());
   };
@@ -1095,7 +1096,7 @@
     var verbose = (typeof options !== 'undefined' && 'verbose' in options &&
                    options.verbose);
 
-    while (pos.moveList.length > 0) {
+    while (this.moveList.length > 0) {
       reversed_moveList.push(this._undo_move());
     }
 
@@ -1181,7 +1182,7 @@
    */
   Chess.prototype._update_setup = function(fen) {
     var pos = this.position;
-    if (pos.moveList.length > 0) return;
+    if (this.moveList.length > 0) return;
     if (fen !== DEFAULT_POSITION) {
       this.headers['SetUp'] = fen;
       this.headers['FEN'] = '1';
@@ -1557,7 +1558,7 @@
 
   Chess.prototype._push = function(move) {
     var pos = this.position;
-    pos.moveList.push({
+    this.moveList.push({
       move: move,
       kings: {b: pos.kings.b, w: pos.kings.w},
       turn: pos.turn,
@@ -1654,7 +1655,7 @@
 
   Chess.prototype._undo_move = function() {
     var pos = this.position;
-    var old = pos.moveList.pop();
+    var old = this.moveList.pop();
     if (old == null) { return null; }
 
     var move = old.move;
