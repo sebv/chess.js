@@ -69,10 +69,10 @@
       SQUARES = {};
 
   for(var  i=8; i>0; i--)
-    for(var j=0; j<8; j++) 
+    for(var j=0; j<8; j++)
       SQUARES_KEYS.push(String.fromCharCode('a'.charCodeAt()+j) + i);
 
-  for(var i=0; i< SQUARES_KEYS.length; i++) 
+  for(var i=0; i< SQUARES_KEYS.length; i++)
     SQUARES[SQUARES_KEYS[i]] = i + 8*Math.floor(i / 8);
 
   // todo: should not be needed 
@@ -477,7 +477,7 @@
       ep_square: EMPTY,
       half_moves: 0,
       move_number: 1,
-      history: [],
+      moveList: [],
       header: {}
     };
 
@@ -807,14 +807,14 @@
       header_exists = true;
     }
 
-    if (header_exists && pos.history.length) {
+    if (header_exists && pos.moveList.length) {
       result.push(newline);
     }
 
-    /* pop all of history onto reversed_history */
-    var reversed_history = [];
-    while (pos.history.length > 0) {
-      reversed_history.push(this._undo_move());
+    /* pop all of moveList onto reversed_moveList */
+    var reversed_moveList = [];
+    while (pos.moveList.length > 0) {
+      reversed_moveList.push(this._undo_move());
     }
 
     var moves = [];
@@ -822,8 +822,8 @@
     var pgn_move_number = 1;
 
     /* build the list of moves.  a move_string looks like: "3. e3 e6" */
-    while (reversed_history.length > 0) {
-      var move = reversed_history.pop();
+    while (reversed_moveList.length > 0) {
+      var move = reversed_moveList.pop();
 
       /* if the position started with black to move, start PGN with 1. ... */
       if (pgn_move_number === 1 && move.color === 'b') {
@@ -852,7 +852,7 @@
       moves.push(pos.header.Result);
     }
 
-    /* history should be back to what is was before we started generating PGN,
+    /* moveList should be back to what is was before we started generating PGN,
      * so join together moves
      */
     if (max_width === 0) {
@@ -1030,7 +1030,7 @@
     pos.ep_square = EMPTY;
     pos.half_moves = 0;
     pos.move_number = 1;
-    pos.history = [];
+    pos.moveList = [];
     pos.header = {};
     this._update_setup(this._generate_fen());
   };
@@ -1090,17 +1090,17 @@
 
   Chess.prototype.history = function(options) {
     var pos = this._pos();
-    var reversed_history = [];
+    var reversed_moveList = [];
     var move_history = [];
     var verbose = (typeof options !== 'undefined' && 'verbose' in options &&
                    options.verbose);
 
-    while (pos.history.length > 0) {
-      reversed_history.push(this._undo_move());
+    while (pos.moveList.length > 0) {
+      reversed_moveList.push(this._undo_move());
     }
 
-    while (reversed_history.length > 0) {
-      var move = reversed_history.pop();
+    while (reversed_moveList.length > 0) {
+      var move = reversed_moveList.pop();
       if (verbose) {
         move_history.push(this._make_pretty(move));
       } else {
@@ -1175,12 +1175,12 @@
   /* called when the initial board setup is changed with put() or remove().
    * modifies the SetUp and FEN properties of the header object.  if the FEN is
    * equal to the default position, the SetUp and FEN are deleted
-   * the setup is only updated if history.length is zero, ie moves haven't been
+   * the setup is only updated if moveList.length is zero, ie moves haven't been
    * made.
    */
   Chess.prototype._update_setup = function(fen) {
     var pos = this._pos();
-    if (pos.history.length > 0) return;
+    if (pos.moveList.length > 0) return;
     if (fen !== DEFAULT_POSITION) {
       pos.header['SetUp'] = fen;
       pos.header['FEN'] = '1';
@@ -1556,7 +1556,7 @@
 
   Chess.prototype._push = function(move) {
     var pos = this._pos();
-    pos.history.push({
+    pos.moveList.push({
       move: move,
       kings: {b: pos.kings.b, w: pos.kings.w},
       turn: pos.turn,
@@ -1661,7 +1661,7 @@
 
   Chess.prototype._undo_move = function() {
     var pos = this._pos();
-    var old = pos.history.pop();
+    var old = pos.moveList.pop();
     if (old == null) { return null; }
 
     var move = old.move;
