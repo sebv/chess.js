@@ -464,6 +464,20 @@
   ];
 
   /***************************************************************************
+   * Position Class 
+   **************************************************************************/
+
+  var Position = function() {
+    this.board = new Array(128);
+    this.kings = {w: EMPTY, b: EMPTY};
+    this.turn = WHITE;
+    this.castling = {w: 0, b: 0};
+    this.ep_square = EMPTY;
+    this.half_moves = 0;
+    this.move_number = 1;
+  };
+
+  /***************************************************************************
    * Chess Class Constructor 
    **************************************************************************/
 
@@ -471,15 +485,7 @@
 
     this.headers = {};
 
-    this.position = {
-      board: new Array(128),
-      kings: {w: EMPTY, b: EMPTY},
-      turn: WHITE,
-      castling: {w: 0, b: 0},
-      ep_square: EMPTY,
-      half_moves: 0,
-      move_number: 1
-    };
+    this.position = new Position();
 
     this.moveList = [];
 
