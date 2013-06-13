@@ -469,6 +469,8 @@
 
   var Chess = function(fen) {
 
+    this.headers = {};
+
     this.position = {
       board: new Array(128),
       kings: {w: EMPTY, b: EMPTY},
@@ -477,8 +479,7 @@
       ep_square: EMPTY,
       half_moves: 0,
       move_number: 1,
-      moveList: [],
-      header: {}
+      moveList: []
     };
 
     /* if the user passes in a fen string, load it, else default to
@@ -801,11 +802,11 @@
     var pos = this.position;
 
     /* add the PGN header headerrmation */
-    for (var i in pos.header) {
+    for (var i in this.headers) {
       /* TODO: order of enumerated properties in header object is not
        * guaranteed, see ECMA-262 spec (section 12.6.4)
        */
-      result.push('[' + i + ' \"' + pos.header[i] + '\"]' + newline);
+      result.push('[' + i + ' \"' + this.headers[i] + '\"]' + newline);
       header_exists = true;
     }
 
@@ -850,8 +851,8 @@
     }
 
     /* is there a result? */
-    if (typeof pos.header.Result !== 'undefined') {
-      moves.push(pos.header.Result);
+    if (typeof this.headers.Result !== 'undefined') {
+      moves.push(this.headers.Result);
     }
 
     /* moveList should be back to what is was before we started generating PGN,
@@ -901,7 +902,7 @@
       parser.parse( pgn, function(evt, data) {
         switch(evt) {
         case 'header':
-          pos.header[data.name] = data.value;
+          this.headers[data.name] = data.value;
           break;
         case  'move':
           var move = this._move_from_san(trim(data));
@@ -916,7 +917,7 @@
           lastMove = move;
           break;
         case  'score':
-          if(!pos.header['Result']) pos.header['Result'] = data;
+          if(!this.headers['Result']) this.headers['Result'] = data;
           break;
         case 'end':
           ended  = true;
@@ -1030,7 +1031,7 @@
     pos.half_moves = 0;
     pos.move_number = 1;
     pos.moveList = [];
-    pos.header = {};
+    this.headers = {};
     this._update_setup(this._generate_fen());
   };
 
@@ -1166,10 +1167,10 @@
     for (var i = 0; i < args.length; i += 2) {
       if (typeof args[i] === 'string' &&
           typeof args[i + 1] === 'string') {
-        this.position.header[args[i]] = args[i + 1];
+        this.headers[args[i]] = args[i + 1];
       }
     }
-    return this.position.header;
+    return this.headers;
   };
 
   /* called when the initial board setup is changed with put() or remove().
@@ -1182,11 +1183,11 @@
     var pos = this.position;
     if (pos.moveList.length > 0) return;
     if (fen !== DEFAULT_POSITION) {
-      pos.header['SetUp'] = fen;
-      pos.header['FEN'] = '1';
+      this.headers['SetUp'] = fen;
+      this.headers['FEN'] = '1';
     } else {
-      delete pos.header['SetUp'];
-      delete pos.header['FEN'];
+      delete this.headers['SetUp'];
+      delete this.headers['FEN'];
     }
   };
 
