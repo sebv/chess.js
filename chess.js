@@ -63,16 +63,20 @@
       a2:  16, b2:  17, c2:  18, d2:  19, e2:  20, f2:  21, g2:  22, h2:  23,
       a1:   0, b1:   1, c1:   2, d1:   3, e1:   4, f1:   5, g1:   6, h1:   7,
    */
-  var SQUARES_KEYS = [],
+  var SQUARES_KEYS = [], // from a1 to h8 
+      SQUARES_KEYS_A8_TO_H1 = [], // from a8 to h1
       SQUARES = {};
 
-  for(var  i=8; i>0; i--)
+  for(var  i=0; i<8; i++)
     for(var j=0; j<8; j++)
-      SQUARES_KEYS.push(String.fromCharCode('a'.charCodeAt()+j) + i);
+    {
+      SQUARES_KEYS.push(String.fromCharCode('a'.charCodeAt()+j) + (i+1));
+      SQUARES_KEYS_A8_TO_H1.push(String.fromCharCode('a'.charCodeAt()+j) + (8-i));
+    }
 
   for(var i=0; i< SQUARES_KEYS.length; i++) {
-    SQUARES[SQUARES_KEYS[i]] = 
-      (7 - Math.floor(i / 8)) * 16 + (i % 8); // rank * 16 + file
+    SQUARES[SQUARES_KEYS[i]] =
+      (Math.floor(i / 8)) * 16 + (i % 8); // rank * 16 + file
   }
 
   var RANK_1 = 0;
@@ -501,7 +505,8 @@
   Chess.ROOK = ROOK;
   Chess.QUEEN = QUEEN;
   Chess.KING = KING;
-  Chess.SQUARES = SQUARES_KEYS;
+  Chess.SQUARES = SQUARES_KEYS; // a1 to h8
+  Chess.SQUARES_A8_TO_H1 = SQUARES_KEYS_A8_TO_H1; // a8 to h1  
   Chess.FLAGS = FLAGS;
 
   /***************************************************************************
@@ -509,12 +514,12 @@
   **************************************************************************/
 
   Chess.prototype.load = function(fen) {
-    // We use k to traverse SQUARES_KEYS from a8 to h1,
+    // We use k to traverse SQUARES_KEYS_A8_TO_H1 from a8 to h1,
     // in the same order as the fen spec.
     var pos = this._pos();
     var tokens = fen.split(/\s+/);
     var position = tokens[0];
-    var k = 0;  
+    var k = 0;
     var valid = SYMBOLS + '12345678/';
 
     if (!this.validate_fen(fen).valid) {
@@ -532,7 +537,7 @@
         k += parseInt(piece, 10);
       } else {
         var color = (piece < 'a') ? WHITE : BLACK;
-        var square = SQUARES[SQUARES_KEYS[k]];
+        var square = SQUARES[SQUARES_KEYS_A8_TO_H1[k]];
         this.put({type: piece.toLowerCase(), color: color}, algebraic(square));
         k++;
       }
@@ -934,8 +939,8 @@
   Chess.prototype.ascii = function() {
     var s = '   +------------------------+\n';
     var pos = this._pos();
-    for (var i = 0; i < SQUARES_KEYS.length; i++) {
-      var square = SQUARES[SQUARES_KEYS[i]];
+    for (var i = 0; i < SQUARES_KEYS_A8_TO_H1.length; i++) {
+      var square = SQUARES[SQUARES_KEYS_A8_TO_H1[i]];
       /* display the rank */
       if (file(square) === 0) {
         s += ' ' + '87654321'[rank(square)] + ' |';
@@ -1116,8 +1121,8 @@
     var empty = 0;
     var fen = '';
     var pos = this._pos();
-    for (var i =0; i < SQUARES_KEYS.length; i++) {
-      var idx = SQUARES[SQUARES_KEYS[i]];
+    for (var i =0; i < SQUARES_KEYS_A8_TO_H1.length; i++) {
+      var idx = SQUARES[SQUARES_KEYS_A8_TO_H1[i]];
       if (pos.board[idx] == null) {
         empty++;
       } else {
