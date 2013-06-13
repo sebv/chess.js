@@ -618,7 +618,7 @@
     var num_pieces = 0;
     var sq_color = 0;
     var pos = this._pos();
-    for (var i = SQUARES.a8; i<= SQUARES.h1; i++) {
+    for (var i = 0; i< pos.board.length; i++) {
       sq_color = (sq_color + 1) % 2;
       if (i & 0x88) { i += 7; continue; }
 
@@ -935,7 +935,7 @@
   Chess.prototype.ascii = function() {
     var s = '   +------------------------+\n';
     var pos = this._pos();
-    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+    for (var i = 0; i < pos.board.length; i++) {
       /* display the rank */
       if (file(i) === 0) {
         s += ' ' + '87654321'[rank(i)] + ' |';
@@ -1120,7 +1120,7 @@
     var empty = 0;
     var fen = '';
     var pos = this._pos();
-    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+    for (var i = 0; i < pos.board.length; i++) {
       if (pos.board[i] == null) {
         empty++;
       } else {
@@ -1232,8 +1232,9 @@
     var them = swap_color(us);
     var second_rank = {b: RANK_7, w: RANK_2};
 
-    var first_sq = SQUARES.a8;
-    var last_sq = SQUARES.h1;
+    var first_sq = 0;
+    var last_sq = pos.board.length;
+    
     var single_square = false;
 
     /* do we want legal moves? */
@@ -1508,7 +1509,7 @@
 
   Chess.prototype._attacked = function(color, square) {
     var board = this._pos().board;
-    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+    for (var i = 0; i <= board.length; i++) {
       /* did we run off the end of the board */
       if (i & 0x88) { i += 7; continue; }
 
