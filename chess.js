@@ -127,10 +127,13 @@
   var RANK_7 = 1;
   var RANK_8 = 0;
 
-  var SQUARES;
-  (function() {
-    /* jshint indent: false */
-    SQUARES = {
+  /*****************************************************************************
+   * Initialising SQUARES with 0x88 representation.
+   ****************************************************************************/
+
+   /*
+      SQUARES should contain the following:
+      SQUARES = {
       a8:   0, b8:   1, c8:   2, d8:   3, e8:   4, f8:   5, g8:   6, h8:   7,
       a7:  16, b7:  17, c7:  18, d7:  19, e7:  20, f7:  21, g7:  22, h7:  23,
       a6:  32, b6:  33, c6:  34, d6:  35, e6:  36, f6:  37, g6:  38, h6:  39,
@@ -139,8 +142,17 @@
       a3:  80, b3:  81, c3:  82, d3:  83, e3:  84, f3:  85, g3:  86, h3:  87,
       a2:  96, b2:  97, c2:  98, d2:  99, e2: 100, f2: 101, g2: 102, h2: 103,
       a1: 112, b1: 113, c1: 114, d1: 115, e1: 116, f1: 117, g1: 118, h1: 119
-    };
-  })();
+      };
+   */
+  var SQUARES_KEYS = [],
+      SQUARES = {};
+
+  for(var  i=8; i>0; i--)
+    for(var j=0; j<8; j++) 
+      SQUARES_KEYS.push(String.fromCharCode('a'.charCodeAt()+j) + i);
+
+  for(var i=0; i< SQUARES_KEYS.length; i++) 
+    SQUARES[SQUARES_KEYS[i]] = i + 8*Math.floor(i / 8);
 
   var ROOKS = {
     w: [{square: SQUARES.a1, flag: BITS.QSIDE_CASTLE},
@@ -466,20 +478,7 @@
   Chess.ROOK = ROOK;
   Chess.QUEEN = QUEEN;
   Chess.KING = KING;
-  Chess.SQUARES = (function() {
-              /* from the ECMA-262 spec (section 12.6.4):
-               * "The mechanics of enumerating the properties ... is
-               * implementation dependent"
-               * so: for (var sq in SQUARES) { keys.push(sq); } might not be
-               * ordered correctly
-               */
-              var keys = [];
-              for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
-                if (i & 0x88) { i += 7; continue; }
-                keys.push(algebraic(i));
-              }
-              return keys;
-            })();
+  Chess.SQUARES = SQUARES_KEYS;
   Chess.FLAGS = FLAGS;
 
   /***************************************************************************
