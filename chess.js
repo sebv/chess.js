@@ -469,7 +469,7 @@
 
   var Chess = function(fen) {
 
-    var position = {
+    this.position = {
       board: new Array(128),
       kings: {w: EMPTY, b: EMPTY},
       turn: WHITE,
@@ -480,8 +480,6 @@
       moveList: [],
       header: {}
     };
-
-    this._pos = function() {return position;};
 
     /* if the user passes in a fen string, load it, else default to
      * starting position
@@ -516,7 +514,7 @@
   Chess.prototype.load = function(fen) {
     // We use k to traverse SQUARES_KEYS_A8_TO_H1 from a8 to h1,
     // in the same order as the fen spec.
-    var pos = this._pos();
+    var pos = this.position;
     var tokens = fen.split(/\s+/);
     var position = tokens[0];
     var k = 0;
@@ -598,7 +596,7 @@
   };
 
   Chess.prototype.in_check = function() {
-    return this._king_attacked(this._pos().turn);
+    return this._king_attacked(this.position.turn);
   };
 
   Chess.prototype.in_checkmate = function() {
@@ -610,7 +608,7 @@
   };
 
   Chess.prototype.in_draw = function() {
-    return this._pos().half_moves >= 100 ||
+    return this.position.half_moves >= 100 ||
            this.in_stalemate() ||
            this.insufficient_material() ||
            this.in_threefold_repetition();
@@ -621,7 +619,7 @@
     var bishops = [];
     var num_pieces = 0;
     var sq_color = 0;
-    var pos = this._pos();
+    var pos = this.position;
     for (var i = 0; i< pos.board.length; i++) {
       sq_color = (sq_color + 1) % 2;
       if (i & 0x88) { i += 7; continue; }
@@ -694,7 +692,7 @@
   };
 
   Chess.prototype.game_over = function() {
-    return this._pos().half_moves >= 100 ||
+    return this.position.half_moves >= 100 ||
            this.in_checkmate() ||
            this.in_stalemate() ||
            this.insufficient_material() ||
@@ -800,7 +798,7 @@
     var result = [];
     var header_exists = false;
 
-    var pos = this._pos();
+    var pos = this.position;
 
     /* add the PGN header headerrmation */
     for (var i in pos.header) {
@@ -888,7 +886,7 @@
   };
 
   Chess.prototype.load_pgn = function(pgn, options) {
-    var pos = this._pos();
+    var pos = this.position;
 
     var newline_char = (typeof options === 'object' &&
                         typeof options.newline_char === 'string') ?
@@ -938,7 +936,7 @@
 
   Chess.prototype.ascii = function() {
     var s = '   +------------------------+\n';
-    var pos = this._pos();
+    var pos = this.position;
     for (var i = 0; i < SQUARES_KEYS_A8_TO_H1.length; i++) {
       var square = SQUARES[SQUARES_KEYS_A8_TO_H1[i]];
       /* display the rank */
@@ -968,7 +966,7 @@
   };
 
   Chess.prototype.turn = function() {
-    return this._pos().turn;
+    return this.position.turn;
   };
 
   Chess.prototype.move = function(move) {
@@ -1023,7 +1021,7 @@
   };
 
   Chess.prototype.clear = function() {
-    var pos = this._pos();
+    var pos = this.position;
     pos.board = new Array(128);
     pos.kings = {w: EMPTY, b: EMPTY};
     pos.turn = WHITE;
@@ -1053,9 +1051,9 @@
     }
 
     var sq = SQUARES[square];
-    this._pos().board[sq] = {type: piece.type, color: piece.color};
+    this.position.board[sq] = {type: piece.type, color: piece.color};
     if (piece.type === KING) {
-      this._pos().kings[piece.color] = sq;
+      this.position.kings[piece.color] = sq;
     }
 
     this._update_setup(this._generate_fen());
@@ -1064,15 +1062,15 @@
   };
 
   Chess.prototype.get = function(square) {
-    var piece = this._pos().board[SQUARES[square]];
+    var piece = this.position.board[SQUARES[square]];
     return (piece) ? {type: piece.type, color: piece.color} : null;
   };
 
   Chess.prototype.remove = function(square) {
     var piece = this.get(square);
-    this._pos().board[SQUARES[square]] = null;
+    this.position.board[SQUARES[square]] = null;
     if (piece && piece.type === KING) {
-      this._pos().kings[piece.color] = EMPTY;
+      this.position.kings[piece.color] = EMPTY;
     }
 
     this._update_setup(this._generate_fen());
@@ -1090,7 +1088,7 @@
   };
 
   Chess.prototype.history = function(options) {
-    var pos = this._pos();
+    var pos = this.position;
     var reversed_moveList = [];
     var move_history = [];
     var verbose = (typeof options !== 'undefined' && 'verbose' in options &&
@@ -1120,7 +1118,7 @@
   Chess.prototype._generate_fen = function() {
     var empty = 0;
     var fen = '';
-    var pos = this._pos();
+    var pos = this.position;
     for (var i =0; i < SQUARES_KEYS_A8_TO_H1.length; i++) {
       var idx = SQUARES[SQUARES_KEYS_A8_TO_H1[i]];
       if (pos.board[idx] == null) {
@@ -1168,10 +1166,10 @@
     for (var i = 0; i < args.length; i += 2) {
       if (typeof args[i] === 'string' &&
           typeof args[i + 1] === 'string') {
-        this._pos().header[args[i]] = args[i + 1];
+        this.position.header[args[i]] = args[i + 1];
       }
     }
-    return this._pos().header;
+    return this.position.header;
   };
 
   /* called when the initial board setup is changed with put() or remove().
@@ -1181,7 +1179,7 @@
    * made.
    */
   Chess.prototype._update_setup = function(fen) {
-    var pos = this._pos();
+    var pos = this.position;
     if (pos.moveList.length > 0) return;
     if (fen !== DEFAULT_POSITION) {
       pos.header['SetUp'] = fen;
@@ -1194,7 +1192,7 @@
 
   Chess.prototype._build_move = function(board, from, to, flags, promotion) {
     var move = {
-      color: this._pos().turn,
+      color: this.position.turn,
       from: from,
       to: to,
       flags: flags,
@@ -1228,7 +1226,7 @@
       }
     };
 
-    var pos = this._pos();
+    var pos = this.position;
     var moves = [];
     var us = pos.turn;
     var them = swap_color(us);
@@ -1419,7 +1417,7 @@
     var to, from, flags = BITS.NORMAL, promotion;
     var parse = move.match(/^([NBKRQ])?([abcdefgh12345678][12345678]?)?(x)?([abcdefgh][12345678])(=?[NBRQ])?/);
 
-    var pos = this._pos();
+    var pos = this.position;
     if (move.slice(0, 5) === 'O-O-O') {
       from = pos.kings[pos.turn];
       to = from - 2;
@@ -1510,7 +1508,7 @@
   };
 
   Chess.prototype._attacked = function(color, square) {
-    var board = this._pos().board;
+    var board = this.position.board;
     for (var i = 0; i <= board.length; i++) {
       /* did we run off the end of the board */
       if (i & 0x88) { i += 7; continue; }
@@ -1551,13 +1549,13 @@
   };
 
   Chess.prototype._king_attacked = function(color) {
-    return this._attacked(swap_color(color), this._pos().kings[color]);
+    return this._attacked(swap_color(color), this.position.kings[color]);
   };
 
 
 
   Chess.prototype._push = function(move) {
-    var pos = this._pos();
+    var pos = this.position;
     pos.moveList.push({
       move: move,
       kings: {b: pos.kings.b, w: pos.kings.w},
@@ -1570,7 +1568,7 @@
   };
 
   Chess.prototype._make_move = function(move) {
-    var pos = this._pos();
+    var pos = this.position;
     var us = pos.turn;
     var them = swap_color(us);
     this._push(move);
@@ -1654,7 +1652,7 @@
   };
 
   Chess.prototype._undo_move = function() {
-    var pos = this._pos();
+    var pos = this.position;
     var old = pos.moveList.pop();
     if (old == null) { return null; }
 
@@ -1778,7 +1776,7 @@
   Chess.prototype._perft = function(depth) {
     var moves = this._generate_moves({legal: false});
     var nodes = 0;
-    var color = this._pos().turn;
+    var color = this.position.turn;
 
     for (var i = 0, len = moves.length; i < len; i++) {
       this._make_move(moves[i]);
