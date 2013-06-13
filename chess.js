@@ -54,16 +54,14 @@
    /*
       SQUARES should contain the following:
 
-      a8:   0, b8:   1, c8:   2, d8:   3, e8:   4, f8:   5, g8:   6, h8:   7,
-      a7:  16, b7:  17, c7:  18, d7:  19, e7:  20, f7:  21, g7:  22, h7:  23,
-      a6:  32, b6:  33, c6:  34, d6:  35, e6:  36, f6:  37, g6:  38, h6:  39,
-      a5:  48, b5:  49, c5:  50, d5:  51, e5:  52, f5:  53, g5:  54, h5:  55,
-      a4:  64, b4:  65, c4:  66, d4:  67, e4:  68, f4:  69, g4:  70, h4:  71,
-      a3:  80, b3:  81, c3:  82, d3:  83, e3:  84, f3:  85, g3:  86, h3:  87,
-      a2:  96, b2:  97, c2:  98, d2:  99, e2: 100, f2: 101, g2: 102, h2: 103,
-      a1: 112, b1: 113, c1: 114, d1: 115, e1: 116, f1: 117, g1: 118, h1: 119
-
-      todo: use standard version where a1 is 0
+      a8: 112, b8: 113, c8: 114, d8: 115, e8: 116, f8: 117, g8: 118, h8: 119
+      a7:  96, b7:  97, c7:  98, d7:  99, e7: 100, f7: 101, g7: 102, h7: 103,
+      a6:  80, b6:  81, c6:  82, d6:  83, e6:  84, f6:  85, g6:  86, h6:  87,
+      a5:  64, b5:  65, c5:  66, d5:  67, e5:  68, f5:  69, g5:  70, h5:  71,
+      a4:  48, b4:  49, c4:  50, d4:  51, e4:  52, f4:  53, g4:  54, h4:  55,
+      a3:  32, b3:  33, c3:  34, d3:  35, e3:  36, f3:  37, g3:  38, h3:  39,
+      a2:  16, b2:  17, c2:  18, d2:  19, e2:  20, f2:  21, g2:  22, h2:  23,
+      a1:   0, b1:   1, c1:   2, d1:   3, e1:   4, f1:   5, g1:   6, h1:   7,
    */
   var SQUARES_KEYS = [],
       SQUARES = {};
@@ -72,18 +70,15 @@
     for(var j=0; j<8; j++)
       SQUARES_KEYS.push(String.fromCharCode('a'.charCodeAt()+j) + i);
 
-  for(var i=0; i< SQUARES_KEYS.length; i++)
-    SQUARES[SQUARES_KEYS[i]] = i + 8*Math.floor(i / 8);
+  for(var i=0; i< SQUARES_KEYS.length; i++) {
+    SQUARES[SQUARES_KEYS[i]] = 
+      (7 - Math.floor(i / 8)) * 16 + (i % 8); // rank * 16 + file
+  }
 
-  // todo: should not be needed 
-  var RANK_1 = 7;
-  var RANK_2 = 6;
-  var RANK_3 = 5;
-  var RANK_4 = 4;
-  var RANK_5 = 3;
-  var RANK_6 = 2;
-  var RANK_7 = 1;
-  var RANK_8 = 0;
+  var RANK_1 = 0;
+  var RANK_2 = 1;
+  var RANK_7 = 6;
+  var RANK_8 = 7;
 
   /*****************************************************************************
    * Pieces movement
@@ -91,8 +86,8 @@
 
   // using 0x88 representation
   var PAWN_OFFSETS = {
-    b: [16, 32, 17, 15],
-    w: [-16, -32, -17, -15]
+    w: [16, 32, 17, 15],
+    b: [-16, -32, -17, -15]
   };
 
   // using 0x88 representation
@@ -131,6 +126,7 @@
   ];
 
   // using 0x88 representation
+  
   var RAYS = [
     17 ,  0,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0,  0, 15, 0,
     0  , 17,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0, 15,  0, 0,
@@ -148,7 +144,7 @@
     0  ,-15,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,-17,  0, 0,
     -15,  0,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,  0,-17
   ];
-
+  
   /*****************************************************************************
    * Move related constants
    ****************************************************************************/
@@ -201,7 +197,7 @@
 
   function algebraic(i){
     var f = file(i), r = rank(i);
-    return 'abcdefgh'.substring(f,f+1) + '87654321'.substring(r,r+1);
+    return 'abcdefgh'.substring(f,f+1) + '12345678'.substring(r,r+1);
   }
 
   function swap_color(c) {
@@ -513,10 +509,12 @@
   **************************************************************************/
 
   Chess.prototype.load = function(fen) {
+    // We use k to traverse SQUARES_KEYS from a8 to h1,
+    // in the same order as the fen spec.
     var pos = this._pos();
     var tokens = fen.split(/\s+/);
     var position = tokens[0];
-    var square = 0;
+    var k = 0;  
     var valid = SYMBOLS + '12345678/';
 
     if (!this.validate_fen(fen).valid) {
@@ -529,13 +527,14 @@
       var piece = position.charAt(i);
 
       if (piece === '/') {
-        square += 8;
+        // nothing to do
       } else if (is_digit(piece)) {
-        square += parseInt(piece, 10);
+        k += parseInt(piece, 10);
       } else {
         var color = (piece < 'a') ? WHITE : BLACK;
+        var square = SQUARES[SQUARES_KEYS[k]];
         this.put({type: piece.toLowerCase(), color: color}, algebraic(square));
-        square++;
+        k++;
       }
     }
 
@@ -935,26 +934,26 @@
   Chess.prototype.ascii = function() {
     var s = '   +------------------------+\n';
     var pos = this._pos();
-    for (var i = 0; i < pos.board.length; i++) {
+    for (var i = 0; i < SQUARES_KEYS.length; i++) {
+      var square = SQUARES[SQUARES_KEYS[i]];
       /* display the rank */
-      if (file(i) === 0) {
-        s += ' ' + '87654321'[rank(i)] + ' |';
+      if (file(square) === 0) {
+        s += ' ' + '87654321'[rank(square)] + ' |';
       }
 
       /* empty piece */
-      if (pos.board[i] == null) {
+      if (pos.board[square] == null) {
         s += ' . ';
       } else {
-        var piece = pos.board[i].type;
-        var color = pos.board[i].color;
+        var piece = pos.board[square].type;
+        var color = pos.board[square].color;
         var symbol = (color === WHITE) ?
                      piece.toUpperCase() : piece.toLowerCase();
         s += ' ' + symbol + ' ';
       }
 
-      if ((i + 1) & 0x88) {
+      if ((square + 1) & 0x88) {
         s += '|\n';
-        i += 8;
       }
     }
     s += '   +------------------------+\n';
@@ -979,7 +978,6 @@
      */
     var move_obj = null;
     var moves = this._generate_moves();
-
     if (typeof move === 'string') {
       /* convert the move string to a move object */
       for (var i = 0, len = moves.length; i < len; i++) {
@@ -1010,9 +1008,7 @@
      * move is made
      */
     var pretty_move = this._make_pretty(move_obj);
-
     this._make_move(move_obj);
-
     return pretty_move;
   };
 
@@ -1120,32 +1116,33 @@
     var empty = 0;
     var fen = '';
     var pos = this._pos();
-    for (var i = 0; i < pos.board.length; i++) {
-      if (pos.board[i] == null) {
+    for (var i =0; i < SQUARES_KEYS.length; i++) {
+      var idx = SQUARES[SQUARES_KEYS[i]];
+      if (pos.board[idx] == null) {
         empty++;
       } else {
         if (empty > 0) {
           fen += empty;
           empty = 0;
         }
-        var color = pos.board[i].color;
-        var piece = pos.board[i].type;
+        var color = pos.board[idx].color;
+        var piece = pos.board[idx].type;
 
         fen += (color === WHITE) ?
                  piece.toUpperCase() : piece.toLowerCase();
       }
 
-      if ((i + 1) & 0x88) {
+      if ((idx + 1) & 0x88) {
         if (empty > 0) {
           fen += empty;
         }
 
-        if (i !== SQUARES.h1) {
+        if (idx !== SQUARES.h1) {
           fen += '/';
         }
 
         empty = 0;
-        i += 8;
+        
       }
     }
 
@@ -1519,10 +1516,9 @@
       var piece = board[i];
       var difference = i - square;
       var index = difference + 119;
-
       if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
         if (piece.type === PAWN) {
-          if (difference > 0) {
+          if (difference < 0) {
             if (piece.color === WHITE) return true;
           } else {
             if (piece.color === BLACK) return true;
@@ -1580,9 +1576,9 @@
     /* if ep capture, remove the captured pawn */
     if (move.flags & BITS.EP_CAPTURE) {
       if (pos.turn === BLACK) {
-        pos.board[move.to - 16] = null;
-      } else {
         pos.board[move.to + 16] = null;
+      } else {
+        pos.board[move.to - 16] = null;
       }
     }
 
@@ -1637,9 +1633,9 @@
     /* if big pawn move, update the en passant square */
     if (move.flags & BITS.BIG_PAWN) {
       if (pos.turn === 'b') {
-        pos.ep_square = move.to - 16;
-      } else {
         pos.ep_square = move.to + 16;
+      } else {
+        pos.ep_square = move.to - 16;
       }
     } else {
       pos.ep_square = EMPTY;
@@ -1685,9 +1681,9 @@
     } else if (move.flags & BITS.EP_CAPTURE) {
       var index;
       if (us === BLACK) {
-        index = move.to - 16;
-      } else {
         index = move.to + 16;
+      } else {
+        index = move.to - 16;
       }
       pos.board[index] = {type: PAWN, color: them};
     }

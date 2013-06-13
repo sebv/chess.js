@@ -916,7 +916,7 @@ suite("History", function() {
 });
 
 suite("ascii", function() {
-
+  // todo: check ascii res in test
   var chess = new Chess();
 
   test('ascii', function() {
