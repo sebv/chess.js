@@ -1575,11 +1575,7 @@
 
     /* if ep capture, remove the captured pawn */
     if (move.flags & BITS.EP_CAPTURE) {
-      if (pos.turn === BLACK) {
-        pos.board[move.to + 16] = null;
-      } else {
-        pos.board[move.to - 16] = null;
-      }
+      pos.board[move.to - PAWN_OFFSETS[us][0]] = null;
     }
 
     /* if pawn promotion, replace with new piece */
@@ -1632,11 +1628,7 @@
 
     /* if big pawn move, update the en passant square */
     if (move.flags & BITS.BIG_PAWN) {
-      if (pos.turn === 'b') {
-        pos.ep_square = move.to + 16;
-      } else {
-        pos.ep_square = move.to - 16;
-      }
+      pos.ep_square = move.to - PAWN_OFFSETS[us][0];
     } else {
       pos.ep_square = EMPTY;
     }
@@ -1679,15 +1671,9 @@
     if (move.flags & BITS.CAPTURE) {
       pos.board[move.to] = {type: move.captured, color: them};
     } else if (move.flags & BITS.EP_CAPTURE) {
-      var index;
-      if (us === BLACK) {
-        index = move.to + 16;
-      } else {
-        index = move.to - 16;
-      }
+      var index = move.to - PAWN_OFFSETS[us][0];
       pos.board[index] = {type: PAWN, color: them};
     }
-
 
     if (move.flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
       var castling_to, castling_from;
