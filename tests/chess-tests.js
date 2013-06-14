@@ -618,6 +618,7 @@ suite("Make Move", function() {
   positions.forEach(function(position) {
     var chess = new Chess();
     chess.load(position.fen);
+
     test(position.fen + ' (' + position.move + ' ' + position.legal + ')', function() {
       var result = chess.move(position.move);
       if (position.legal) {
