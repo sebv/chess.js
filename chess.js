@@ -1516,10 +1516,7 @@
     var positions = {};
     var repetition = false;
 
-    for(var i= this.moveList.length -1; i >= 0; i--){
-      var moveRecord = this.moveList[i];
-      this.position.undo_move(moveRecord.move, moveRecord.prevFields);
-    }
+    this._undo_all();
 
     var checkFen = function() {
       /* remove the last two fields in the FEN string, they're not needed
@@ -1589,10 +1586,7 @@
       result.push(newline);
     }
 
-    for(var i= this.moveList.length -1; i >= 0; i--){
-      var moveRecord = this.moveList[i];
-      this.position.undo_move(moveRecord.move, moveRecord.prevFields);
-    }
+    this._undo_all();
 
     var moves = [];
     var move_string = '';
@@ -1841,6 +1835,13 @@
     var move = old.move;
 
     return pos.undo_move(old.move, old.prevFields);
+  };
+
+  Chess.prototype._undo_all = function() {
+    for(var i= this.moveList.length -1; i >= 0; i--){
+      var moveRecord = this.moveList[i];
+      this.position.undo_move(moveRecord.move, moveRecord.prevFields);
+    }
   };
 
   /*****************************************************************************
