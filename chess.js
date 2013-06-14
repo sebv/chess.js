@@ -1761,23 +1761,21 @@
 
   Chess.prototype.history = function(options) {
     var pos = this.position;
-    var reversed_moveList = [];
+
     var move_history = [];
     var verbose = (typeof options !== 'undefined' && 'verbose' in options &&
                    options.verbose);
 
-    while (this.moveList.length > 0) {
-      reversed_moveList.push(this._undo_move());
-    }
+    this._undo_all();
 
-    while (reversed_moveList.length > 0) {
-      var move = reversed_moveList.pop();
+    for(var i = 0; i < this.moveList.length; i++) {
+      var move = this.moveList[i].move;
       if (verbose) {
         move_history.push(this.position.make_pretty(move));
       } else {
         move_history.push(this.position.move_to_san(move));
       }
-      this._make_move(move);
+      this.position.make_move(move);
     }
 
     return move_history;
