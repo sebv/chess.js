@@ -1386,6 +1386,44 @@
     return piece;
   };
 
+  Position.prototype._move_obj = function(move) {
+    /* The _move_Obj function can be called with in the following parameters:
+     *
+     * .move('Nxb7')      <- where 'move' is a case-sensitive SAN string
+     *
+     * .move({ from: 'h7', <- where the 'move' is a move object (additional
+     *         to :'h8',      fields are ignored)
+     *         promotion: 'q',
+     *      })
+     */
+    var move_obj = null;
+    var moves = this._generate_moves();
+
+    if (typeof move === 'string') {
+      /* convert the move string to a move object */
+      for (var i = 0, len = moves.length; i < len; i++) {
+        var sanMove = this._move_to_san(moves[i]);
+        if (move === sanMove) {
+          move_obj = moves[i];
+          break;
+        }
+      }
+    } else if (typeof move === 'object') {
+      /* convert the pretty move object to an ugly move object */
+      for (var i = 0, len = moves.length; i < len; i++) {
+        if (move.from === algebraic(moves[i].from) &&
+            move.to === algebraic(moves[i].to) &&
+            (!('promotion' in moves[i]) ||
+            move.promotion === moves[i].promotion)) {
+          move_obj = moves[i];
+          break;
+        }
+      }
+    }
+
+    return move_obj;
+  };
+
   /***************************************************************************
    * Chess Class Constructor 
    **************************************************************************/
@@ -1692,35 +1730,9 @@
      *         promotion: 'q',
      *      })
      */
-    var move_obj = null;
-    var moves = this.position._generate_moves();
+    var move_obj = this.position._move_obj(move);
 
-    if (typeof move === 'string') {
-      /* convert the move string to a move object */
-      for (var i = 0, len = moves.length; i < len; i++) {
-        var sanMove = this.position._move_to_san(moves[i]);
-        if (move === sanMove) {
-          move_obj = moves[i];
-          break;
-        }
-      }
-    } else if (typeof move === 'object') {
-      /* convert the pretty move object to an ugly move object */
-      for (var i = 0, len = moves.length; i < len; i++) {
-        if (move.from === algebraic(moves[i].from) &&
-            move.to === algebraic(moves[i].to) &&
-            (!('promotion' in moves[i]) ||
-            move.promotion === moves[i].promotion)) {
-          move_obj = moves[i];
-          break;
-        }
-      }
-    }
-
-    /* failed to find move */
-    if (!move_obj) {
-      return null;
-    }
+    if (!move_obj) return null;
 
     /* need to make a copy of move because we can't generate SAN after the
      * move is made
