@@ -1835,6 +1835,7 @@
     return pos.undo_move(old.move, old.prevFields);
   };
 
+  // does not modify movelist
   Chess.prototype._undo_all = function() {
     for(var i= this.moveList.length -1; i >= 0; i--){
       var moveRecord = this.moveList[i];
