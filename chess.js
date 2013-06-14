@@ -1808,4 +1808,8 @@
     exports.Chess = Chess;
     exports.PgnParser = PgnParser;
   }
+  if (typeof window !== 'undefined') {
+    window.Chess = Chess;
+    window.PgnParser = PgnParser;
+  }
 })();
