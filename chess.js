@@ -1611,6 +1611,7 @@
     return nodes;
   };
 
+  if (typeof window !== 'undefined') window.Chess = Chess;
   /* export Chess object if using node or any other CommonJS compatible
    * environment */
   if (typeof exports !== 'undefined') exports.Chess = Chess;
