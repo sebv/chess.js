@@ -1513,17 +1513,15 @@
      * Zobrist key would be maintained in the _make_move/_undo_move functions,
      * avoiding the costly that we do below.
      */
-    var moves = [];
     var positions = {};
     var repetition = false;
 
-    while (true) {
-      var move = this._undo_move();
-      if (!move) break;
-      moves.push(move);
+    for(var i= this.moveList.length -1; i >= 0; i--){
+      var moveRecord = this.moveList[i];
+      this.position.undo_move(moveRecord.move, moveRecord.prevFields);
     }
 
-    while (true) {
+    var checkFen = function() {
       /* remove the last two fields in the FEN string, they're not needed
        * when checking for draw by rep */
       var fen = this.position.generate_fen().split(' ').slice(0,4).join(' ');
@@ -1533,11 +1531,15 @@
       if (positions[fen] >= 3) {
         repetition = true;
       }
+    }.bind(this);
 
-      if (!moves.length) {
-        break;
-      }
-      this._make_move(moves.pop());
+    checkFen();
+
+    for(var i= 0; i < this.moveList.length; i++){
+      var moveRecord = this.moveList[i];
+      this.position.make_move(moveRecord.move);
+
+      checkFen();
     }
 
     return repetition;
