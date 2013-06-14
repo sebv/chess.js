@@ -231,6 +231,12 @@
     return str.replace(/^\s+|\s+$/g, '');
   }
 
+  function delegate(_this , target, method, _arguments) {
+    _this.copyTo(target);
+    var args = Array.prototype.slice.call(_arguments);
+    return method.apply(target, args);
+  }
+
   /***************************************************************************
    * Pgn Parser 
    ********************x******************************************************/
@@ -503,6 +509,20 @@
     this.move_number = fields.move_number;
   };
 
+  Position.prototype.copyTo = function(other) {
+    for (var i = 0; i < this.board.length; i++) {
+      other.board[i] = this.board[i];
+    }
+    other.kings.w = this.kings.w;
+    other.kings.b = this.kings.b;
+    other.turn = this.turn;
+    other.castling.w = this.castling.w;
+    other.castling.b = this.castling.b;
+    other.ep_square = this.ep_square;
+    other.half_moves = this.half_moves;
+    other.move_number = this.move_number;
+  };
+
   Position.prototype.in_check = function() {
     return this._king_attacked(this.turn);
   };
@@ -581,6 +601,9 @@
    * (SAN)
    */
   Position.prototype.move_to_san = function(move) {
+    if(this.scratch) return delegate(this , this.scratch,
+      Position.prototype.move_to_san, arguments);
+
     var output = '';
 
     if (move.flags & BITS.KSIDE_CASTLE) {
@@ -833,6 +856,13 @@
     return move;
   };
 
+  Position.prototype.undo_moves = function(moveList) {
+    for(var i= moveList.length -1; i >= 0; i--){
+      var moveRecord = moveList[i];
+      this.undo_move(moveRecord.move, moveRecord.prevFields);
+    }
+  };
+
   Position.prototype.generate_fen = function() {
     var empty = 0;
     var fen = '';
@@ -880,6 +910,9 @@
   };
 
   Position.prototype.generate_moves = function(options) {
+    if(this.scratch) return delegate(this , this.scratch,
+      Position.prototype.generate_moves, arguments);
+
     var moves = [];
     var us = this.turn;
     var them = swap_color(us);
@@ -1037,6 +1070,35 @@
     move.flags = flags;
 
     return move;
+  };
+
+  Position.prototype.moves = function(options) {
+    if(this.scratch) return delegate(this , this.scratch,
+      Position.prototype.moves, arguments);
+
+    /* The internal representation of a chess move is in 0x88 format, and
+     * not meant to be human-readable.  The code below converts the 0x88
+     * square coordinates to algebraic coordinates.  It also prunes an
+     * unnecessary move keys resulting from a verbose call.
+     */
+
+    var ugly_moves = this.generate_moves(options);
+    var moves = [];
+
+    for (var i = 0, len = ugly_moves.length; i < len; i++) {
+
+      /* does the user want a full move object (most likely not), or just
+       * SAN
+       */
+      if (typeof options !== 'undefined' && 'verbose' in options &&
+          options.verbose) {
+        moves.push(this.make_pretty(ugly_moves[i]));
+      } else {
+        moves.push(this.move_to_san(ugly_moves[i]));
+      }
+    }
+
+    return moves;
   };
 
   Position.prototype.ascii = function() {
@@ -1348,6 +1410,9 @@
   };
 
   Position.prototype.to_move_obj = function(move) {
+    if(this.scratch) return delegate(this , this.scratch,
+      Position.prototype.to_move_obj, arguments);
+
     /* The _move_Obj function can be called with in the following parameters:
      *
      * .move('Nxb7')      <- where 'move' is a case-sensitive SAN string
@@ -1408,6 +1473,8 @@
 
     this.position = new Position();
 
+    this.position.scratch = new Position();
+
     this.moveList = [];
 
     /* if the user passes in a fen string, load it, else default to
@@ -1459,29 +1526,7 @@
   };
 
   Chess.prototype.moves = function(options) {
-    /* The internal representation of a chess move is in 0x88 format, and
-     * not meant to be human-readable.  The code below converts the 0x88
-     * square coordinates to algebraic coordinates.  It also prunes an
-     * unnecessary move keys resulting from a verbose call.
-     */
-
-    var ugly_moves = this.position.generate_moves(options);
-    var moves = [];
-
-    for (var i = 0, len = ugly_moves.length; i < len; i++) {
-
-      /* does the user want a full move object (most likely not), or just
-       * SAN
-       */
-      if (typeof options !== 'undefined' && 'verbose' in options &&
-          options.verbose) {
-        moves.push(this.position.make_pretty(ugly_moves[i]));
-      } else {
-        moves.push(this.position.move_to_san(ugly_moves[i]));
-      }
-    }
-
-    return moves;
+    return this.position.moves(options);
   };
 
   Chess.prototype.in_check = function() {
@@ -1513,15 +1558,16 @@
      * Zobrist key would be maintained in the _make_move/_undo_move functions,
      * avoiding the costly that we do below.
      */
+    var pos = this._scratch_or_position();
     var positions = {};
     var repetition = false;
 
-    this._undo_all();
+    pos.undo_moves(this.moveList);
 
     var checkFen = function() {
       /* remove the last two fields in the FEN string, they're not needed
        * when checking for draw by rep */
-      var fen = this.position.generate_fen().split(' ').slice(0,4).join(' ');
+      var fen = pos.generate_fen().split(' ').slice(0,4).join(' ');
 
       /* has the position occurred three or move times */
       positions[fen] = (fen in positions) ? positions[fen] + 1 : 1;
@@ -1534,7 +1580,7 @@
 
     for(var i= 0; i < this.moveList.length; i++){
       var moveRecord = this.moveList[i];
-      this.position.make_move(moveRecord.move);
+      pos.make_move(moveRecord.move);
 
       checkFen();
     }
@@ -1562,6 +1608,7 @@
     /* using the specification from http://www.chessclub.com/help/PGN-spec
      * example for html usage: .pgn({ max_width: 72, newline_char: "<br />" })
      */
+
     var newline = (typeof options === 'object' &&
                    typeof options.newline_char === 'string') ?
                    options.newline_char : '\n';
@@ -1571,7 +1618,7 @@
     var result = [];
     var header_exists = false;
 
-    var pos = this.position;
+    var pos = this._scratch_or_position();
 
     /* add the PGN header headerrmation */
     for (var i in this.headers) {
@@ -1586,7 +1633,7 @@
       result.push(newline);
     }
 
-    this._undo_all();
+    pos.undo_moves(this.moveList);
 
     var moves = [];
     var move_string = '';
@@ -1609,8 +1656,8 @@
         pgn_move_number++;
       }
 
-      move_string = move_string + ' ' + this.position.move_to_san(move);
-      this.position.make_move(move);
+      move_string = move_string + ' ' + pos.move_to_san(move);
+      pos.make_move(move);
     }
 
     /* are there any other leftover moves? */
@@ -1655,7 +1702,6 @@
   };
 
   Chess.prototype.load_pgn = function(pgn, options) {
-    var pos = this.position;
 
     var newline_char = (typeof options === 'object' &&
                         typeof options.newline_char === 'string') ?
@@ -1721,14 +1767,17 @@
      *         promotion: 'q',
      *      })
      */
-    var move_obj = this.position.to_move_obj(move);
+
+    var pos = this._scratch_or_position();
+
+    var move_obj = pos.to_move_obj(move);
 
     if (!move_obj) return null;
 
     /* need to make a copy of move because we can't generate SAN after the
      * move is made
      */
-    var pretty_move = this.position.make_pretty(move_obj);
+    var pretty_move = pos.make_pretty(move_obj);
 
     this._make_move(move_obj);
     return pretty_move;
@@ -1760,22 +1809,22 @@
   };
 
   Chess.prototype.history = function(options) {
-    var pos = this.position;
+    var pos = this._scratch_or_position();
 
     var move_history = [];
     var verbose = (typeof options !== 'undefined' && 'verbose' in options &&
                    options.verbose);
 
-    this._undo_all();
+    pos.undo_moves(this.moveList);
 
     for(var i = 0; i < this.moveList.length; i++) {
       var move = this.moveList[i].move;
       if (verbose) {
-        move_history.push(this.position.make_pretty(move));
+        move_history.push(pos.make_pretty(move));
       } else {
-        move_history.push(this.position.move_to_san(move));
+        move_history.push(pos.move_to_san(move));
       }
-      this.position.make_move(move);
+      pos.make_move(move);
     }
 
     return move_history;
@@ -1835,12 +1884,12 @@
     return pos.undo_move(old.move, old.prevFields);
   };
 
-  // does not modify movelist
-  Chess.prototype._undo_all = function() {
-    for(var i= this.moveList.length -1; i >= 0; i--){
-      var moveRecord = this.moveList[i];
-      this.position.undo_move(moveRecord.move, moveRecord.prevFields);
+  Chess.prototype._scratch_or_position = function() {
+    if(this.scratch){
+      this.position.copyTo(this.scratch);
+      return this.scratch;
     }
+    return this.position;
   };
 
   /*****************************************************************************
