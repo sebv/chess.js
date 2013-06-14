@@ -1589,10 +1589,9 @@
       result.push(newline);
     }
 
-    /* pop all of moveList onto reversed_moveList */
-    var reversed_moveList = [];
-    while (this.moveList.length > 0) {
-      reversed_moveList.push(this._undo_move());
+    for(var i= this.moveList.length -1; i >= 0; i--){
+      var moveRecord = this.moveList[i];
+      this.position.undo_move(moveRecord.move, moveRecord.prevFields);
     }
 
     var moves = [];
@@ -1600,8 +1599,8 @@
     var pgn_move_number = 1;
 
     /* build the list of moves.  a move_string looks like: "3. e3 e6" */
-    while (reversed_moveList.length > 0) {
-      var move = reversed_moveList.pop();
+    for(var i = 0; i < this.moveList.length; i++) {
+      var move = this.moveList[i].move;
 
       /* if the position started with black to move, start PGN with 1. ... */
       if (pgn_move_number === 1 && move.color === 'b') {
@@ -1617,7 +1616,7 @@
       }
 
       move_string = move_string + ' ' + this.position.move_to_san(move);
-      this._make_move(move);
+      this.position.make_move(move);
     }
 
     /* are there any other leftover moves? */
