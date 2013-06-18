@@ -369,6 +369,67 @@ suite("Get/Put/Remove", function() {
 
 });
 
+suite("back - forward - first - last", function() {
+
+  var chess = new Chess();
+  var moves = ['e4', 'e5','Nf3','Bc5'];
+  var pos = [
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+    'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
+    'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2',
+    'rnbqk1nr/pppp1ppp/8/2b1p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
+  ];
+
+  moves.forEach(function(move) {
+    chess.move(move);
+  });
+
+  test("back", function() {
+    var res;
+    assert(chess.fen() === pos[4]);
+    // going to start move by move
+    for(var i=3; i>=0; i--){
+      res = chess.back();
+      assert(res);
+      assert(chess.fen() === pos[i]);
+    }
+    // already at first move
+    for(var i=0; i<2; i++){
+      res = chess.back();
+      assert(!res);
+      assert(chess.fen() === pos[0]);
+    }
+  });
+  test("forward", function() {
+    var res;
+    assert(chess.fen() === pos[0]);
+    // going to start move by move
+    for(var i=1; i<=4; i++){
+      res = chess.forward();
+      assert(res);
+      assert(chess.fen() === pos[i]);
+    }
+    // already at last move
+    for(var i=0; i<2; i++){
+      res = chess.forward();
+      assert(!res);
+      assert(chess.fen() === pos[4]);
+    }
+    
+  });
+  test("first", function() {
+    assert(chess.fen() === pos[4]);
+    chess.first();
+    assert(chess.fen() === pos[0]);
+  });
+  test("last", function() {
+    assert(chess.fen() === pos[0]);
+    chess.last();
+    assert(chess.fen() === pos[4]);
+  });
+});
+
 
 suite("FEN", function() {
 

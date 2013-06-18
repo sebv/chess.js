@@ -1477,7 +1477,7 @@
 
     this.moveList = [];
 
-    this.currentMove = 0;
+    this.currentMove = -1;
 
     /* if the user passes in a fen string, load it, else default to
      * starting position
@@ -1512,8 +1512,13 @@
   Chess.prototype.clear = function() {
     this.position.reset();
     this.moveList = [];
+    this.currentMove = -1;
     this.headers = {};
     this._updateSetup(this.position.fen());
+  };
+
+  Chess.prototype.reset = function() {
+    return this.load(DEFAULT_POSITION);
   };
 
   Chess.prototype.load = function(fen) {
@@ -1521,10 +1526,6 @@
     if( !this.position.load(fen) ) return false;
     this._updateSetup(this.position.fen());
     return true;
-  };
-
-  Chess.prototype.reset = function() {
-    return this.load(DEFAULT_POSITION);
   };
 
   Chess.prototype.moves = function(options) {
@@ -1712,7 +1713,7 @@
     if(options) {
       options.newlineChar = options.newlineChar ? options.newlineChar : options['newline_char'];
     }
-    
+
     var newlineChar = (typeof options === 'object' &&
                         typeof options.newlineChar === 'string') ?
                           options.newlineChar : '\r?\n';
@@ -1778,6 +1779,9 @@
      *      })
      */
 
+    // goes to last move before adding
+    this.last();
+
     var pos = this._scratchOrPosition();
 
     var moveObj = pos.toMove(move);
@@ -1794,6 +1798,9 @@
   };
 
   Chess.prototype.undo = function() {
+    // goes to last move before undoing
+    this.last();
+
     var move = this._undoMove();
     return (move) ? this.position.makePretty(move) : null;
   };
@@ -1841,13 +1848,34 @@
   };
 
   Chess.prototype.back = function() {
-
+    if(this.currentMove >= 0)
+    {
+      var last = this.moveList[this.currentMove];
+      this.position.undoMove(last.move, last.prevFields);
+      this.currentMove--;
+      return true;
+    }
+    return false;
   };
 
   Chess.prototype.forward = function() {
-
+    if(this.currentMove < this.moveList.length -1)
+    {
+      var next = this.moveList[this.currentMove +1];
+      var move = this.position.move(next.move);
+      this.currentMove++;
+      return true;
+    }
+    return false;
   };
 
+  Chess.prototype.first = function() {
+    while(this.back()) {}
+  };
+
+  Chess.prototype.last = function() {
+    while(this.forward()) {}
+  };
 
   /***************************************************************************
   * NON PUBLIC METHODS
@@ -1891,14 +1919,15 @@
   Chess.prototype._move = function(moveObj) {
     this._push(moveObj);
     this.position.move(moveObj);
+    this.currentMove ++;
   };
 
   Chess.prototype._undoMove = function() {
-    var pos = this.position;
     var old = this.moveList.pop();
     if (old == null) { return null; }
-
-    return pos.undoMove(old.move, old.prevFields);
+    var move = this.position.undoMove(old.move, old.prevFields);
+    this.currentMove --;
+    return move;
   };
 
   Chess.prototype._scratchOrPosition = function() {
