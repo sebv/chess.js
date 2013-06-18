@@ -528,11 +528,11 @@
   };
 
   Position.prototype.in_checkmate = function() {
-    return this.in_check() && this.generate_moves().length === 0;
+    return this.in_check() && this.moves().length === 0;
   };
 
   Position.prototype.in_stalemate = function() {
-    return !this.in_check() && this.generate_moves().length === 0;
+    return !this.in_check() && this.moves().length === 0;
   };
 
   Position.prototype.insufficient_material = function() {
@@ -575,7 +575,7 @@
     return false;
   };
 
-  Position.prototype.build_move = function(from, to, flags, promotion) {
+  Position.prototype.new_move = function(from, to, flags, promotion) {
     var move = {
       color: this.turn,
       from: from,
@@ -632,7 +632,7 @@
     }
 
     var oldFields = this.cloneFields();
-    this.make_move(move);
+    this.move(move);
     if (this.in_check()) {
       if (this.in_checkmate()) {
         output += '#';
@@ -734,13 +734,13 @@
       }
     }
     if (from >=0 && to >=0 && flags) {
-      return this.build_move(from, to, flags, promotion);
+      return this.new_move(from, to, flags, promotion);
     } else if (move.length > 0) {
       /* alert(move); // error in PGN, or in parsing. */
     }
   };
 
-  Position.prototype.make_move = function(move) {
+  Position.prototype.move = function(move) {
     var us = this.turn;
     var them = swap_color(us);
     
@@ -863,7 +863,7 @@
     }
   };
 
-  Position.prototype.generate_fen = function() {
+  Position.prototype.fen = function() {
     var empty = 0;
     var fen = '';
     for (var i =0; i < SQUARES_KEYS_A8_TO_H1.length; i++) {
@@ -909,9 +909,9 @@
     return [fen, this.turn, cflags, epflags, this.half_moves, this.move_number].join(' ');
   };
 
-  Position.prototype.generate_moves = function(options) {
+  Position.prototype.moves = function(options) {
     if(this.scratch) return delegate(this , this.scratch,
-      Position.prototype.generate_moves, arguments);
+      Position.prototype.moves, arguments);
 
     var moves = [];
     var us = this.turn;
@@ -1043,7 +1043,7 @@
     var legal_moves = [];
     for (var i = 0, len = moves.length; i < len; i++) {
       var oldFields = this.cloneFields();
-      this.make_move(moves[i]);
+      this.move(moves[i]);
       if (!this._king_attacked(us)) {
         legal_moves.push(moves[i]);
       }
@@ -1072,9 +1072,10 @@
     return move;
   };
 
-  Position.prototype.moves = function(options) {
+  Position.prototype.san_moves = function(options) {
+
     if(this.scratch) return delegate(this , this.scratch,
-      Position.prototype.moves, arguments);
+      Position.prototype.san_moves, arguments);
 
     /* The internal representation of a chess move is in 0x88 format, and
      * not meant to be human-readable.  The code below converts the 0x88
@@ -1082,7 +1083,7 @@
      * unnecessary move keys resulting from a verbose call.
      */
 
-    var ugly_moves = this.generate_moves(options);
+    var ugly_moves = this.moves(options);
     var moves = [];
 
     for (var i = 0, len = ugly_moves.length; i < len; i++) {
@@ -1097,7 +1098,6 @@
         moves.push(this.move_to_san(ugly_moves[i]));
       }
     }
-
     return moves;
   };
 
@@ -1138,105 +1138,6 @@
     }
 
     return null;
-  };
-
-  Position.prototype._attacked = function(color, square) {
-    for (var i = 0; i <= this.board.length; i++) {
-      /* did we run off the end of the board */
-      if (i & 0x88) { i += 7; continue; }
-
-      /* if empty square or wrong color */
-      if (this.board[i] == null || this.board[i].color !== color) continue;
-
-      var piece = this.board[i];
-      var difference = i - square;
-      var index = difference + 119;
-      if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
-        if (piece.type === PAWN) {
-          if (difference < 0) {
-            if (piece.color === WHITE) return true;
-          } else {
-            if (piece.color === BLACK) return true;
-          }
-          continue;
-        }
-
-        /* if the piece is a knight or a king */
-        if (piece.type === 'n' || piece.type === 'k') return true;
-
-        var offset = RAYS[index];
-        var j = i + offset;
-
-        var blocked = false;
-        while (j !== square) {
-          if (this.board[j] != null) { blocked = true; break; }
-          j += offset;
-        }
-
-        if (!blocked) return true;
-      }
-    }
-
-    return false;
-  };
-
-  Position.prototype._king_attacked = function(color) {
-    return this._attacked(swap_color(color), this.kings[color]);
-  };
-
-  /* this function is used to uniquely identify ambiguous moves */
-  Position.prototype._get_disambiguator = function(move) {
-    var moves = this.generate_moves();
-
-    var from = move.from;
-    var to = move.to;
-    var piece = move.piece;
-
-    var ambiguities = 0;
-    var same_rank = 0;
-    var same_file = 0;
-
-    for (var i = 0, len = moves.length; i < len; i++) {
-      var ambig_from = moves[i].from;
-      var ambig_to = moves[i].to;
-      var ambig_piece = moves[i].piece;
-
-      /* if a move of the same piece type ends on the same to square, we'll
-       * need to add a disambiguator to the algebraic notation
-       */
-      if (piece === ambig_piece && from !== ambig_from && to === ambig_to) {
-        ambiguities++;
-
-        if (rank(from) === rank(ambig_from)) {
-          same_rank++;
-        }
-
-        if (file(from) === file(ambig_from)) {
-          same_file++;
-        }
-      }
-    }
-
-    if (ambiguities > 0) {
-      /* if there exists a similar moving piece on the same rank and file as
-       * the move in question, use the square as the disambiguator
-       */
-      if (same_rank > 0 && same_file > 0) {
-        return algebraic(from);
-      }
-      /* if the moving piece rests on the same file, use the rank symbol as the
-       * disambiguator
-       */
-      else if (same_file > 0) {
-        return algebraic(from).charAt(1);
-      }
-      /* else use the file symbol */
-      else {
-        return algebraic(from).charAt(0);
-      }
-    }
-
-    return '';
   };
 
   Position.prototype.validate_fen = function(fen) {
@@ -1409,9 +1310,9 @@
     return piece;
   };
 
-  Position.prototype.to_move_obj = function(move) {
+  Position.prototype.to_move = function(move) {
     if(this.scratch) return delegate(this , this.scratch,
-      Position.prototype.to_move_obj, arguments);
+      Position.prototype.to_move, arguments);
 
     /* The _move_Obj function can be called with in the following parameters:
      *
@@ -1423,7 +1324,7 @@
      *      })
      */
     var move_obj = null;
-    var moves = this.generate_moves();
+    var moves = this.moves();
 
     if (typeof move === 'string') {
       /* convert the move string to a move object */
@@ -1450,16 +1351,115 @@
     return move_obj;
   };
 
+  Position.prototype._attacked = function(color, square) {
+    for (var i = 0; i <= this.board.length; i++) {
+      /* did we run off the end of the board */
+      if (i & 0x88) { i += 7; continue; }
+
+      /* if empty square or wrong color */
+      if (this.board[i] == null || this.board[i].color !== color) continue;
+
+      var piece = this.board[i];
+      var difference = i - square;
+      var index = difference + 119;
+      if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
+        if (piece.type === PAWN) {
+          if (difference < 0) {
+            if (piece.color === WHITE) return true;
+          } else {
+            if (piece.color === BLACK) return true;
+          }
+          continue;
+        }
+
+        /* if the piece is a knight or a king */
+        if (piece.type === 'n' || piece.type === 'k') return true;
+
+        var offset = RAYS[index];
+        var j = i + offset;
+
+        var blocked = false;
+        while (j !== square) {
+          if (this.board[j] != null) { blocked = true; break; }
+          j += offset;
+        }
+
+        if (!blocked) return true;
+      }
+    }
+
+    return false;
+  };
+
+  Position.prototype._king_attacked = function(color) {
+    return this._attacked(swap_color(color), this.kings[color]);
+  };
+
+  /* this function is used to uniquely identify ambiguous moves */
+  Position.prototype._get_disambiguator = function(move) {
+    var moves = this.moves();
+
+    var from = move.from;
+    var to = move.to;
+    var piece = move.piece;
+
+    var ambiguities = 0;
+    var same_rank = 0;
+    var same_file = 0;
+
+    for (var i = 0, len = moves.length; i < len; i++) {
+      var ambig_from = moves[i].from;
+      var ambig_to = moves[i].to;
+      var ambig_piece = moves[i].piece;
+
+      /* if a move of the same piece type ends on the same to square, we'll
+       * need to add a disambiguator to the algebraic notation
+       */
+      if (piece === ambig_piece && from !== ambig_from && to === ambig_to) {
+        ambiguities++;
+
+        if (rank(from) === rank(ambig_from)) {
+          same_rank++;
+        }
+
+        if (file(from) === file(ambig_from)) {
+          same_file++;
+        }
+      }
+    }
+
+    if (ambiguities > 0) {
+      /* if there exists a similar moving piece on the same rank and file as
+       * the move in question, use the square as the disambiguator
+       */
+      if (same_rank > 0 && same_file > 0) {
+        return algebraic(from);
+      }
+      /* if the moving piece rests on the same file, use the rank symbol as the
+       * disambiguator
+       */
+      else if (same_file > 0) {
+        return algebraic(from).charAt(1);
+      }
+      /* else use the file symbol */
+      else {
+        return algebraic(from).charAt(0);
+      }
+    }
+
+    return '';
+  };
+
   Position.prototype._add_move = function(moves, from, to, flags) {
     /* if pawn promotion */
     if (this.board[from].type === PAWN &&
     (rank(to) === RANK_8 || rank(to) === RANK_1)) {
       var pieces = [QUEEN, ROOK, BISHOP, KNIGHT];
       for (var i = 0, len = pieces.length; i < len; i++) {
-        moves.push(this.build_move(from, to, flags, pieces[i]));
+        moves.push(this.new_move(from, to, flags, pieces[i]));
       }
     } else {
-      moves.push(this.build_move(from, to, flags));
+      moves.push(this.new_move(from, to, flags));
     }
   };
 
@@ -1511,13 +1511,13 @@
     this.position.reset();
     this.moveList = [];
     this.headers = {};
-    this._update_setup(this.position.generate_fen());
+    this._update_setup(this.position.fen());
   };
 
   Chess.prototype.load = function(fen) {
     this.clear();
     if( !this.position.load(fen) ) return false;
-    this._update_setup(this.position.generate_fen());
+    this._update_setup(this.position.fen());
     return true;
   };
 
@@ -1526,7 +1526,7 @@
   };
 
   Chess.prototype.moves = function(options) {
-    return this.position.moves(options);
+    return this.position.san_moves(options);
   };
 
   Chess.prototype.in_check = function() {
@@ -1555,7 +1555,7 @@
   Chess.prototype.in_threefold_repetition = function() {
     /* TODO: while this function is fine for casual use, a better
      * implementation would use a Zobrist key (instead of FEN). the
-     * Zobrist key would be maintained in the _make_move/_undo_move functions,
+     * Zobrist key would be maintained in the _move/_undo_move functions,
      * avoiding the costly that we do below.
      */
     var pos = this._scratch_or_position();
@@ -1567,7 +1567,7 @@
     var checkFen = function() {
       /* remove the last two fields in the FEN string, they're not needed
        * when checking for draw by rep */
-      var fen = pos.generate_fen().split(' ').slice(0,4).join(' ');
+      var fen = pos.fen().split(' ').slice(0,4).join(' ');
 
       /* has the position occurred three or move times */
       positions[fen] = (fen in positions) ? positions[fen] + 1 : 1;
@@ -1580,7 +1580,7 @@
 
     for(var i= 0; i < this.moveList.length; i++){
       var moveRecord = this.moveList[i];
-      pos.make_move(moveRecord.move);
+      pos.move(moveRecord.move);
 
       checkFen();
     }
@@ -1601,7 +1601,7 @@
   };
 
   Chess.prototype.fen = function() {
-    return this.position.generate_fen(arguments);
+    return this.position.fen(arguments);
   };
 
   Chess.prototype.pgn = function(options) {
@@ -1657,7 +1657,7 @@
       }
 
       move_string = move_string + ' ' + pos.move_to_san(move);
-      pos.make_move(move);
+      pos.move(move);
     }
 
     /* are there any other leftover moves? */
@@ -1726,7 +1726,7 @@
           if (move == null) {
             throw new Error('Invalid move');
           } else {
-            this._make_move(move);
+            this._move(move);
           }
           lastMove = move;
           break;
@@ -1770,7 +1770,7 @@
 
     var pos = this._scratch_or_position();
 
-    var move_obj = pos.to_move_obj(move);
+    var move_obj = pos.to_move(move);
 
     if (!move_obj) return null;
 
@@ -1779,7 +1779,7 @@
      */
     var pretty_move = pos.make_pretty(move_obj);
 
-    this._make_move(move_obj);
+    this._move(move_obj);
     return pretty_move;
   };
 
@@ -1790,7 +1790,7 @@
 
   Chess.prototype.put = function(piece, square) {
     if( !this.position.put(piece, square) ) return false;
-    this._update_setup(this.position.generate_fen());
+    this._update_setup(this.position.fen());
     return true;
   };
 
@@ -1800,7 +1800,7 @@
 
   Chess.prototype.remove = function(square) {
     var piece = this.position.remove(square);
-    this._update_setup(this.position.generate_fen());
+    this._update_setup(this.position.fen());
     return piece;
   };
 
@@ -1824,7 +1824,7 @@
       } else {
         move_history.push(pos.move_to_san(move));
       }
-      pos.make_move(move);
+      pos.move(move);
     }
 
     return move_history;
@@ -1861,25 +1861,23 @@
     }
   };
 
-  Chess.prototype._push = function(move) {
+  Chess.prototype._push = function(move_obj) {
     var oldFields = this.position.cloneFields();
     this.moveList.push({
-      move: move,
+      move: move_obj,
       prevFields: this.position.cloneFields()
     });
   };
 
-  Chess.prototype._make_move = function(move) {
-    this._push(move);
-    this.position.make_move(move);
+  Chess.prototype._move = function(move_obj) {
+    this._push(move_obj);
+    this.position.move(move_obj);
   };
 
   Chess.prototype._undo_move = function() {
     var pos = this.position;
     var old = this.moveList.pop();
     if (old == null) { return null; }
-
-    var move = old.move;
 
     return pos.undo_move(old.move, old.prevFields);
   };
@@ -1897,12 +1895,12 @@
    ****************************************************************************/
 
   Chess.prototype._perft = function(depth) {
-    var moves = this.position.generate_moves({legal: false});
+    var moves = this.position.moves({legal: false});
     var nodes = 0;
     var color = this.position.turn;
 
     for (var i = 0, len = moves.length; i < len; i++) {
-      this._make_move(moves[i]);
+      this._move(moves[i]);
       if (!this.position._king_attacked(color)) {
         if (depth - 1 > 0) {
           var child_nodes = this._perft(depth - 1);
