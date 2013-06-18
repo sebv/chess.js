@@ -1,6 +1,7 @@
 'use strict';
 
 /* jshint quotmark: false */
+/* jshint camelcase: false */
 /* global test, suite*/
 
 if (typeof require !== "undefined") {
